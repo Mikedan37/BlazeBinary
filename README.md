@@ -624,10 +624,10 @@ When multiple frames are concatenated:
 │    ┌──────┐  ┌──────────┐  ┌──────┐  ┌────────┐         │
 │    │ 0x00 │  │ 0x01 0x02│  │ 0x00 │  │ 0xAA   │         │
 │    │ 0x00 │  │ 0x03 0x04│  │ 0x00 │  │ 0xBB   │         │
-│    │ 0x00 │              │ │ 0x02 │                     │
-│    │ 0x04 │              │ └──────┘                     │
-│    └──────┘              │                              │
-│    Frame 1               │  Frame 2                     │
+│    │ 0x00 │   __________   │ 0x02 │   ________          │
+│    │ 0x04 │                └──────┘                     │
+│    └──────┘                                             │
+│    Frame 1                  Frame 2                     │
 │                                                         │
 │  Parser extracts frames sequentially:                   │
 │    1. nextFrame() → Frame 1 payload                     │
