@@ -113,8 +113,10 @@ public class BlazeFrameParser {
             return nil // Need more data
         }
         
-        // Extract frame payload (zero-copy slice)
-        let payload = buffer.subdata(in: 4..<totalFrameSize)
+        // Extract frame payload before modifying buffer
+        // Create an explicit copy to avoid issues with buffer modification on Linux
+        // subdata creates a copy, but we ensure it's done before removeFirst
+        let payload = Data(buffer[4..<totalFrameSize])
         
         // Remove processed frame from buffer
         buffer.removeFirst(totalFrameSize)
