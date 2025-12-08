@@ -30,10 +30,11 @@ public class BlazeStreamingCompressor {
         }
         #if !canImport(Compression)
         throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
-        #endif
+        #else
         self.mode = mode
         self.accumulatedData = Data()
         self.chunkSize = chunkSize
+        #endif
     }
     
     /// Compresses a chunk of data incrementally.
@@ -85,10 +86,11 @@ public class BlazeStreamingDecompressor {
         }
         #if !canImport(Compression)
         throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
-        #endif
+        #else
         self.mode = mode
         self.accumulatedData = Data()
         self.estimatedOutputSize = estimatedOutputSize
+        #endif
     }
     
     /// Decompresses a chunk of data incrementally.

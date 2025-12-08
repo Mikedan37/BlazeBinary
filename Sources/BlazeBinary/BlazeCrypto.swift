@@ -117,14 +117,11 @@ internal func deriveSessionKeys(
     let encryptionKey = SymmetricKey(data: encryptionKeyBytes)
     let authenticationKey = SymmetricKey(data: authenticationKeyBytes)
     
-    // Generate random 4-byte nonce prefix
-    var noncePrefix = Data(count: 4)
-    let result = noncePrefix.withUnsafeMutableBytes { bytes in
-        SecRandomCopyBytes(kSecRandomDefault, 4, bytes.baseAddress!)
-    }
-    guard result == errSecSuccess else {
-        throw BlazeBinaryError.encryptionFailed("Failed to generate nonce prefix: \(result)")
-    }
+    // Generate random 4-byte nonce prefix using cross-platform random generation
+    // Use SymmetricKey to generate random bytes (works on all platforms)
+    let randomKey = SymmetricKey(size: .bits256) // 32 bytes, we'll use first 4
+    let randomBytes = randomKey.withUnsafeBytes { Data($0) }
+    let noncePrefix = randomBytes.prefix(4)
     
     return BlazeSessionKeyMaterial(
         encryptionKey: encryptionKey,
