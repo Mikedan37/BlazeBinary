@@ -516,15 +516,16 @@ public class BlazeFrameParser {
             
             let lengthInt = Int(length)
             
+            // Validate frame length first (before checking completeness)
+            // If length is invalid (0 or too large), it's an error regardless of completeness
+            guard lengthInt > 0 && lengthInt <= maxFrameSize else {
+                throw BlazeBinaryError.invalidFrameLength
+            }
+            
             // Check if we have the complete frame (4-byte header + payload)
             let totalFrameSize = 4 + lengthInt
             guard buffer.count >= totalFrameSize else {
                 return nil // Need more data
-            }
-            
-            // Now validate frame length (only after we know we have enough data)
-            guard lengthInt > 0 && lengthInt <= maxFrameSize else {
-                throw BlazeBinaryError.invalidFrameLength
             }
             
             // Extract payload (bytes 4+) - validate range
