@@ -556,7 +556,7 @@ let decompressed = try parser.nextFrame() // Automatically decompressed based on
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
+- [Specification](SPECIFICATION_v1.3.md)
 - [Encoding Model](ENCODING_MODEL.md)
 - [Architecture](ARCHITECTURE.md)
 - [Threat Model](THREAT_MODEL.md)

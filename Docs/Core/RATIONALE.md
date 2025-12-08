@@ -336,7 +336,7 @@ This approach provides:
 ## References
 
 - [Benchmarks](BENCHMARKS.md) – Performance comparisons
-- [Specification](SPECIFICATION.md) – Formal format specification
+- [Specification](SPECIFICATION_v1.3.md) – Formal format specification
 - [Encoding Model](ENCODING_MODEL.md) – Encoding strategies and optimizations
 
 ---
@@ -401,7 +401,7 @@ let text = try record.toCanonicalText()
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
+- [Specification](SPECIFICATION_v1.3.md)
 - [Encoding Model](ENCODING_MODEL.md)
 - [Benchmarks](BENCHMARKS.md)
 - [Architecture](ARCHITECTURE.md)

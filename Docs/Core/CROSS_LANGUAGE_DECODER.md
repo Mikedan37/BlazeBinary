@@ -221,7 +221,7 @@ The Swift implementation in this repository serves as the reference:
 - **Encoder**: `Sources/BlazeBinary/BlazeBinaryEncoder.swift`
 - **Decoder**: `Sources/BlazeBinary/BlazeBinaryDecoder.swift`
 - **Frame Parser**: `Sources/BlazeBinary/BlazeBinaryFrame.swift`
-- **Specification**: `Core/SPECIFICATION.md`
+- **Specification**: `Core/SPECIFICATION_v1.3.md`
 
 ## Testing
 

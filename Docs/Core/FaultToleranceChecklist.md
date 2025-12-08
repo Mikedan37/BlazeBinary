@@ -3,7 +3,7 @@
 **Purpose**: This engineering audit checklist verifies the fault-tolerance and resiliency properties of BlazeBinary. Each item must be verified for production readiness.
 
 For related documentation, see:
-- [SPECIFICATION.md](SPECIFICATION.md) - Encoding format specification
+- [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Encoding format specification
 - [ProductionSafetyProfile.md](ProductionSafetyProfile.md) - Safety guarantees
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Security analysis
 

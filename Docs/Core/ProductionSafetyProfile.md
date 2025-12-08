@@ -3,7 +3,7 @@
 **Purpose**: This document describes the safety guarantees, validation mechanisms, and error handling in BlazeBinary. It provides a complete safety profile for production deployment.
 
 For related documentation, see:
-- [SPECIFICATION.md](SPECIFICATION.md) - Encoding format specification
+- [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Encoding format specification
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Security analysis
 - [FaultToleranceChecklist.md](FaultToleranceChecklist.md) - Engineering checklist
 

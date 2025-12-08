@@ -106,7 +106,7 @@ This document outlines the planned development roadmap for BlazeBinary.
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
+- [Specification](SPECIFICATION_v1.3.md)
 - [Architecture](ARCHITECTURE.md)
 - [Rationale](RATIONALE.md)
 - [Documentation Index](INDEX.md)

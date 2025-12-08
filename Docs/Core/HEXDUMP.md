@@ -96,7 +96,7 @@ The hex dump format follows standard conventions:
 
 ## Related Documents
 
-- [SPECIFICATION.md](SPECIFICATION.md) - Binary format specification
+- [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Binary format specification
 - [FRAME_PROTOCOL.md](FRAME_PROTOCOL.md) - Frame format details
 - [ProtocolExamples.md](ProtocolExamples.md) - Usage examples
 

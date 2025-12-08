@@ -345,7 +345,7 @@ encoder.encode(nil as String?)  // Encodes: <bool=false>
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
+- [Specification](SPECIFICATION_v1.3.md)
 - [Architecture](ARCHITECTURE.md)
 - [Frame Protocol](FRAME_PROTOCOL.md)
 - [Benchmarks](BENCHMARKS.md)

@@ -74,6 +74,6 @@ let point = try decoder.decodeZeroCopy(Point.self) // Zero-copy decode
 
 ## Related Documents
 
-- [SPECIFICATION.md](SPECIFICATION.md) - Encoding format
+- [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Encoding format
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
 

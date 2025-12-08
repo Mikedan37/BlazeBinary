@@ -5,7 +5,7 @@ This directory contains the core protocol specifications, architecture documenta
 ## Contents
 
 - **SPECIFICATION_v1.3.md** - **FROZEN** Protocol v1.3 specification
-- **SPECIFICATION.md** - General specification (evolving)
+- **SPECIFICATION_v1.3.md** - General specification (evolving)
 - **API_STABILITY.md** - API stability guarantees
 - **VERSIONING.md** - Semantic versioning policy
 - **FAILURE_SEMANTICS.md** - Error handling and failure modes
