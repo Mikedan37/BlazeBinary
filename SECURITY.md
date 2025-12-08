@@ -17,7 +17,7 @@ We actively support the following versions with security updates:
 
 If you discover a security vulnerability in BlazeBinary, please report it responsibly.
 
-**Email**: founder@danylchukstudios.dev (placeholder - use GitHub Security Advisories)
+**Email**: founder@danylchukstudios.dev
 
 **Do not** open a public GitHub issue for security vulnerabilities.
 
