@@ -8,7 +8,7 @@
 //  Copyright (c) 2025 Michael D.
 //
 
-import Testing
+import XCTest
 import Foundation
 #if canImport(CoreGraphics)
 import CoreGraphics
@@ -18,7 +18,7 @@ import CoreGraphics
 // MARK: - Determinism Tests
 
 /// Tests that encoding the same input multiple times produces identical bytes.
-@Test func testDeterministicEncoding_sameInput_sameOutput() throws {
+func testDeterministicEncoding_sameInput_sameOutput() throws {
     struct TestRecord: BlazeBinaryCodable, Equatable {
         var id: String
         var count: Int
@@ -61,14 +61,14 @@ import CoreGraphics
         let data = encoder.encodedData()
         
         if let prev = previousData {
-            #expect(data == prev, "Encoding is not deterministic at iteration \(i)")
+            XCTAssert(data == prev, "Encoding is not deterministic at iteration \(i)")
         }
         previousData = data
     }
 }
 
 /// Tests that field order in dictionaries does not affect output (keys are sorted).
-@Test func testDeterministicEncoding_fieldOrderDoesNotAffectOutput() throws {
+func testDeterministicEncoding_fieldOrderDoesNotAffectOutput() throws {
     // Create dictionaries with different key insertion orders
     var dict1: [String: String] = [:]
     dict1["zebra"] = "animal"
@@ -89,11 +89,11 @@ import CoreGraphics
     try encoder2.encode(dict2)
     let data2 = encoder2.encodedData()
     
-    #expect(data1 == data2, "Dictionary encoding should be deterministic regardless of insertion order")
+    XCTAssert(data1 == data2, "Dictionary encoding should be deterministic regardless of insertion order")
 }
 
 /// Tests determinism with nested structures.
-@Test func testDeterministicEncoding_nestedStructures() throws {
+func testDeterministicEncoding_nestedStructures() throws {
     struct Inner: BlazeBinaryCodable, Equatable {
         var value: Int
         
@@ -139,14 +139,14 @@ import CoreGraphics
         let data = encoder.encodedData()
         
         if let prev = previousData {
-            #expect(data == prev, "Nested structure encoding is not deterministic at iteration \(i)")
+            XCTAssert(data == prev, "Nested structure encoding is not deterministic at iteration \(i)")
         }
         previousData = data
     }
 }
 
 /// Tests determinism with arrays of various types.
-@Test func testDeterministicEncoding_arrays() throws {
+func testDeterministicEncoding_arrays() throws {
     let intArray = [1, 2, 3, 4, 5]
     let stringArray = ["a", "b", "c"]
     let dataArray = [Data([0x01]), Data([0x02]), Data([0x03])]
@@ -164,7 +164,7 @@ import CoreGraphics
         }
         let data1 = encoder1.encodedData()
         if let prev = previousIntData {
-            #expect(data1 == prev, "Int array encoding is not deterministic at iteration \(i)")
+            XCTAssert(data1 == prev, "Int array encoding is not deterministic at iteration \(i)")
         }
         previousIntData = data1
         
@@ -176,7 +176,7 @@ import CoreGraphics
         }
         let data2 = encoder2.encodedData()
         if let prev = previousStringData {
-            #expect(data2 == prev, "String array encoding is not deterministic at iteration \(i)")
+            XCTAssert(data2 == prev, "String array encoding is not deterministic at iteration \(i)")
         }
         previousStringData = data2
         
@@ -189,7 +189,7 @@ import CoreGraphics
         }
         let data3 = encoder3.encodedData()
         if let prev = previousDataArray {
-            #expect(data3 == prev, "Data array encoding is not deterministic at iteration \(i)")
+            XCTAssert(data3 == prev, "Data array encoding is not deterministic at iteration \(i)")
         }
         previousDataArray = data3
     }
@@ -197,7 +197,7 @@ import CoreGraphics
 
 #if canImport(CoreGraphics)
 /// Tests determinism with CoreGraphics types.
-@Test func testDeterministicEncoding_coreGraphicsTypes() throws {
+func testDeterministicEncoding_coreGraphicsTypes() throws {
     let point = CGPoint(x: 100.5, y: 200.75)
     let size = CGSize(width: 300.0, height: 400.0)
     let rect = CGRect(x: 10, y: 20, width: 100, height: 200)
@@ -212,7 +212,7 @@ import CoreGraphics
         try encoder1.encode(point)
         let data1 = encoder1.encodedData()
         if let prev = previousPointData {
-            #expect(data1 == prev, "CGPoint encoding is not deterministic at iteration \(i)")
+            XCTAssert(data1 == prev, "CGPoint encoding is not deterministic at iteration \(i)")
         }
         previousPointData = data1
         
@@ -221,7 +221,7 @@ import CoreGraphics
         try encoder2.encode(size)
         let data2 = encoder2.encodedData()
         if let prev = previousSizeData {
-            #expect(data2 == prev, "CGSize encoding is not deterministic at iteration \(i)")
+            XCTAssert(data2 == prev, "CGSize encoding is not deterministic at iteration \(i)")
         }
         previousSizeData = data2
         
@@ -230,7 +230,7 @@ import CoreGraphics
         try encoder3.encode(rect)
         let data3 = encoder3.encodedData()
         if let prev = previousRectData {
-            #expect(data3 == prev, "CGRect encoding is not deterministic at iteration \(i)")
+            XCTAssert(data3 == prev, "CGRect encoding is not deterministic at iteration \(i)")
         }
         previousRectData = data3
     }

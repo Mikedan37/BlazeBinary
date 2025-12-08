@@ -1,40 +1,40 @@
-import Testing
+import XCTest
 @testable import BlazeBinary
 
-@Test func testEncodeUInt32() {
+func testEncodeUInt32() {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(UInt32(0x12345678))
     let data = encoder.encodedData()
     
-    #expect(data.count == 4)
-    #expect(data[0] == 0x78)
-    #expect(data[1] == 0x56)
-    #expect(data[2] == 0x34)
-    #expect(data[3] == 0x12)
+    XCTAssert(data.count == 4)
+    XCTAssert(data[0] == 0x78)
+    XCTAssert(data[1] == 0x56)
+    XCTAssert(data[2] == 0x34)
+    XCTAssert(data[3] == 0x12)
 }
 
-@Test func testEncodeUInt64() {
+func testEncodeUInt64() {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(UInt64(0x0123456789ABCDEF))
     let data = encoder.encodedData()
     
-    #expect(data.count == 8)
-    #expect(data[0] == 0xEF)
-    #expect(data[7] == 0x01)
+    XCTAssert(data.count == 8)
+    XCTAssert(data[0] == 0xEF)
+    XCTAssert(data[7] == 0x01)
 }
 
-@Test func testEncodeBool() {
+func testEncodeBool() {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(true)
     encoder.encode(false)
     let data = encoder.encodedData()
     
-    #expect(data.count == 2)
-    #expect(data[0] == 1)
-    #expect(data[1] == 0)
+    XCTAssert(data.count == 2)
+    XCTAssert(data[0] == 1)
+    XCTAssert(data[1] == 0)
 }
 
-@Test func testEncodeVarint() {
+func testEncodeVarint() {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(0)
     encoder.encode(127)
@@ -46,10 +46,10 @@ import Testing
     // 127: 1 byte
     // 128: 2 bytes (0x80, 0x01)
     // 300: 2 bytes (0xAC, 0x02)
-    #expect(data.count >= 6)
+    XCTAssert(data.count >= 6)
 }
 
-@Test func testEncodeString() {
+func testEncodeString() {
     let encoder = BlazeBinaryEncoder()
     encoder.encode("Hello")
     encoder.encode("")
@@ -57,19 +57,19 @@ import Testing
     
     // "Hello" = 5 bytes + varint(5) = 1 byte = 6 bytes total
     // "" = 0 bytes + varint(0) = 1 byte = 1 byte total
-    #expect(data.count >= 7)
+    XCTAssert(data.count >= 7)
 }
 
-@Test func testEncodeData() {
+func testEncodeData() {
     let encoder = BlazeBinaryEncoder()
     let testData = Data([0x01, 0x02, 0x03])
     encoder.encode(testData)
     let data = encoder.encodedData()
     
     // 3 bytes + varint(3) = 1 byte = 4 bytes total
-    #expect(data.count >= 4)
-    #expect(data[data.count - 3] == 0x01)
-    #expect(data[data.count - 2] == 0x02)
-    #expect(data[data.count - 1] == 0x03)
+    XCTAssert(data.count >= 4)
+    XCTAssert(data[data.count - 3] == 0x01)
+    XCTAssert(data[data.count - 2] == 0x02)
+    XCTAssert(data[data.count - 1] == 0x03)
 }
 

@@ -1,9 +1,9 @@
-import Testing
+import XCTest
 import Foundation
 @testable import BlazeBinary
 
 /// Verification test to show encoded bytes
-@Test func verify_handwriting_encoding_bytes() throws {
+func verify_handwriting_encoding_bytes() throws {
     // Test HandwritingContinuationRequest
     let request = HandwritingContinuationRequest(textBefore: "Hello, world")
     let encoder = BlazeBinaryEncoder()
@@ -20,7 +20,7 @@ import Foundation
     let encoder2 = BlazeBinaryEncoder()
     try encoder2.encode(request)
     let requestData2 = encoder2.encodedData()
-    #expect(requestData == requestData2, "Encoding must be deterministic")
+    XCTAssert(requestData == requestData2, "Encoding must be deterministic")
     
     // Test HandwritingContinuationResponse
     let response = HandwritingContinuationResponse(predictedText: "This is a prediction")
@@ -38,6 +38,6 @@ import Foundation
     let encoder4 = BlazeBinaryEncoder()
     try encoder4.encode(response)
     let responseData2 = encoder4.encodedData()
-    #expect(responseData == responseData2, "Encoding must be deterministic")
+    XCTAssert(responseData == responseData2, "Encoding must be deterministic")
 }
 

@@ -1,4 +1,4 @@
-import Testing
+import XCTest
 import Foundation
 @testable import BlazeBinary
 
@@ -7,7 +7,7 @@ struct ComprehensiveRoundTripTests {
     
     // MARK: - Primitive Round-Trip Tests
     
-    @Test func testRoundTripUInt32AllValues() throws {
+    func testRoundTripUInt32AllValues() throws {
         let testValues: [UInt32] = [
             0,
             1,
@@ -26,11 +26,11 @@ struct ComprehensiveRoundTripTests {
             
             let decoder = BlazeBinaryDecoder(data: data)
             let decoded = try decoder.decodeUInt32()
-            #expect(decoded == value, "Failed for UInt32: \(value)")
+            XCTAssert(decoded == value, "Failed for UInt32: \(value)")
         }
     }
     
-    @Test func testRoundTripUInt64AllValues() throws {
+    func testRoundTripUInt64AllValues() throws {
         let testValues: [UInt64] = [
             0,
             1,
@@ -48,11 +48,11 @@ struct ComprehensiveRoundTripTests {
             
             let decoder = BlazeBinaryDecoder(data: data)
             let decoded = try decoder.decodeUInt64()
-            #expect(decoded == value, "Failed for UInt64: \(value)")
+            XCTAssert(decoded == value, "Failed for UInt64: \(value)")
         }
     }
     
-    @Test func testRoundTripIntAllValues() throws {
+    func testRoundTripIntAllValues() throws {
         let testValues: [Int] = [
             Int.min,
             Int.min + 1,
@@ -74,22 +74,22 @@ struct ComprehensiveRoundTripTests {
             
             let decoder = BlazeBinaryDecoder(data: data)
             let decoded = try decoder.decodeInt()
-            #expect(decoded == value, "Failed for Int: \(value)")
+            XCTAssert(decoded == value, "Failed for Int: \(value)")
         }
     }
     
-    @Test func testRoundTripBool() throws {
+    func testRoundTripBool() throws {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(true)
         encoder.encode(false)
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        #expect(try decoder.decodeBool() == true)
-        #expect(try decoder.decodeBool() == false)
+        XCTAssert(try decoder.decodeBool() == true)
+        XCTAssert(try decoder.decodeBool() == false)
     }
     
-    @Test func testRoundTripStringVariousLengths() throws {
+    func testRoundTripStringVariousLengths() throws {
         let testStrings = [
             "",
             "a",
@@ -107,11 +107,11 @@ struct ComprehensiveRoundTripTests {
             
             let decoder = BlazeBinaryDecoder(data: data)
             let decoded = try decoder.decodeString()
-            #expect(decoded == str, "Failed for string: '\(str)'")
+            XCTAssert(decoded == str, "Failed for string: '\(str)'")
         }
     }
     
-    @Test func testRoundTripDataVariousLengths() throws {
+    func testRoundTripDataVariousLengths() throws {
         let testData = [
             Data(),
             Data([0x01]),
@@ -127,7 +127,7 @@ struct ComprehensiveRoundTripTests {
             
             let decoder = BlazeBinaryDecoder(data: encoded)
             let decoded = try decoder.decodeData()
-            #expect(decoded == data, "Failed for Data of length: \(data.count)")
+            XCTAssert(decoded == data, "Failed for Data of length: \(data.count)")
         }
     }
     
@@ -157,7 +157,7 @@ struct ComprehensiveRoundTripTests {
         }
     }
     
-    @Test func testRoundTripSimpleStruct() throws {
+    func testRoundTripSimpleStruct() throws {
         let original = SimpleStruct(a: 42, b: "test", c: true)
         
         let encoder = BlazeBinaryEncoder()
@@ -167,9 +167,9 @@ struct ComprehensiveRoundTripTests {
         let decoder = BlazeBinaryDecoder(data: data)
         let decoded = try decoder.decode(SimpleStruct.self)
         
-        #expect(decoded.a == original.a)
-        #expect(decoded.b == original.b)
-        #expect(decoded.c == original.c)
+        XCTAssert(decoded.a == original.a)
+        XCTAssert(decoded.b == original.b)
+        XCTAssert(decoded.c == original.c)
     }
     
     struct NestedStruct: BlazeBinaryCodable {
@@ -192,7 +192,7 @@ struct ComprehensiveRoundTripTests {
         }
     }
     
-    @Test func testRoundTripNestedStruct() throws {
+    func testRoundTripNestedStruct() throws {
         let original = NestedStruct(
             inner: SimpleStruct(a: 10, b: "nested", c: false),
             value: 99
@@ -205,10 +205,10 @@ struct ComprehensiveRoundTripTests {
         let decoder = BlazeBinaryDecoder(data: data)
         let decoded = try decoder.decode(NestedStruct.self)
         
-        #expect(decoded.inner.a == original.inner.a)
-        #expect(decoded.inner.b == original.inner.b)
-        #expect(decoded.inner.c == original.inner.c)
-        #expect(decoded.value == original.value)
+        XCTAssert(decoded.inner.a == original.inner.a)
+        XCTAssert(decoded.inner.b == original.inner.b)
+        XCTAssert(decoded.inner.c == original.inner.c)
+        XCTAssert(decoded.value == original.value)
     }
     
     struct ArrayStruct: BlazeBinaryCodable {
@@ -227,7 +227,7 @@ struct ComprehensiveRoundTripTests {
         }
     }
     
-    @Test func testRoundTripArrayStruct() throws {
+    func testRoundTripArrayStruct() throws {
         let original = ArrayStruct(items: [
             SimpleStruct(a: 1, b: "one", c: true),
             SimpleStruct(a: 2, b: "two", c: false),
@@ -241,15 +241,15 @@ struct ComprehensiveRoundTripTests {
         let decoder = BlazeBinaryDecoder(data: data)
         let decoded = try decoder.decode(ArrayStruct.self)
         
-        #expect(decoded.items.count == original.items.count)
+        XCTAssert(decoded.items.count == original.items.count)
         for i in 0..<decoded.items.count {
-            #expect(decoded.items[i].a == original.items[i].a)
-            #expect(decoded.items[i].b == original.items[i].b)
-            #expect(decoded.items[i].c == original.items[i].c)
+            XCTAssert(decoded.items[i].a == original.items[i].a)
+            XCTAssert(decoded.items[i].b == original.items[i].b)
+            XCTAssert(decoded.items[i].c == original.items[i].c)
         }
     }
     
-    @Test func testRoundTripEmptyArray() throws {
+    func testRoundTripEmptyArray() throws {
         let original = ArrayStruct(items: [])
         
         let encoder = BlazeBinaryEncoder()
@@ -259,12 +259,12 @@ struct ComprehensiveRoundTripTests {
         let decoder = BlazeBinaryDecoder(data: data)
         let decoded = try decoder.decode(ArrayStruct.self)
         
-        #expect(decoded.items.isEmpty)
+        XCTAssert(decoded.items.isEmpty)
     }
     
     // MARK: - Determinism Tests
     
-    @Test func testDeterminismPrimitives() throws {
+    func testDeterminismPrimitives() throws {
         let values: [(Int, String)] = [
             (42, "test1"),
             (100, "test2"),
@@ -282,13 +282,13 @@ struct ComprehensiveRoundTripTests {
             let data = encoder.encodedData()
             
             if let prev = previousData {
-                #expect(data == prev, "Encoding is not deterministic")
+                XCTAssert(data == prev, "Encoding is not deterministic")
             }
             previousData = data
         }
     }
     
-    @Test func testDeterminismComposite() throws {
+    func testDeterminismComposite() throws {
         let original = SimpleStruct(a: 42, b: "test", c: true)
         var previousData: Data?
         
@@ -298,7 +298,7 @@ struct ComprehensiveRoundTripTests {
             let data = encoder.encodedData()
             
             if let prev = previousData {
-                #expect(data == prev, "Encoding is not deterministic")
+                XCTAssert(data == prev, "Encoding is not deterministic")
             }
             previousData = data
         }
@@ -306,7 +306,7 @@ struct ComprehensiveRoundTripTests {
     
     // MARK: - Edge Case Tests
     
-    @Test func testRoundTripMaxValues() throws {
+    func testRoundTripMaxValues() throws {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(UInt32.max)
         encoder.encode(UInt64.max)
@@ -315,13 +315,13 @@ struct ComprehensiveRoundTripTests {
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        #expect(try decoder.decodeUInt32() == UInt32.max)
-        #expect(try decoder.decodeUInt64() == UInt64.max)
-        #expect(try decoder.decodeInt() == Int.max)
-        #expect(try decoder.decodeInt() == Int.min)
+        XCTAssert(try decoder.decodeUInt32() == UInt32.max)
+        XCTAssert(try decoder.decodeUInt64() == UInt64.max)
+        XCTAssert(try decoder.decodeInt() == Int.max)
+        XCTAssert(try decoder.decodeInt() == Int.min)
     }
     
-    @Test func testRoundTripZeroValues() throws {
+    func testRoundTripZeroValues() throws {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(UInt32(0))
         encoder.encode(UInt64(0))
@@ -332,12 +332,12 @@ struct ComprehensiveRoundTripTests {
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        #expect(try decoder.decodeUInt32() == 0)
-        #expect(try decoder.decodeUInt64() == 0)
-        #expect(try decoder.decodeInt() == 0)
-        #expect(try decoder.decodeBool() == false)
-        #expect(try decoder.decodeString() == "")
-        #expect(try decoder.decodeData().isEmpty)
+        XCTAssert(try decoder.decodeUInt32() == 0)
+        XCTAssert(try decoder.decodeUInt64() == 0)
+        XCTAssert(try decoder.decodeInt() == 0)
+        XCTAssert(try decoder.decodeBool() == false)
+        XCTAssert(try decoder.decodeString() == "")
+        XCTAssert(try decoder.decodeData().isEmpty)
     }
 }
 

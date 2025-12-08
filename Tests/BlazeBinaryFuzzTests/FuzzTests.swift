@@ -1,9 +1,9 @@
-import Testing
+import XCTest
 import Foundation
 @testable import BlazeBinary
 
 // Fuzz test: Random byte buffers fed to BlazeFrameParser
-@Test func fuzzFrameParser() {
+func fuzzFrameParser() {
     for _ in 0..<1000 {
         let length = Int.random(in: 0...10000)
         var randomBytes = Data()
@@ -21,7 +21,7 @@ import Foundation
             while true {
                 if let frame = try parser.nextFrame() {
                     // Frame extracted - verify it's valid
-                    #expect(frame.count <= BlazeFrameEncoder.maxFrameSize)
+                    XCTAssert(frame.count <= BlazeFrameEncoder.maxFrameSize)
                 } else {
                     break // No more frames
                 }
@@ -35,13 +35,13 @@ import Foundation
             }
         } catch {
             // Unexpected error type
-            Issue.record("Unexpected error type: \(error)")
+            XCTFail("Unexpected error type: \(error)")
         }
     }
 }
 
 // Fuzz test: Random byte buffers fed to BlazeBinaryDecoder
-@Test func fuzzDecoder() {
+func fuzzDecoder() {
     for _ in 0..<1000 {
         let length = Int.random(in: 0...10000)
         var randomBytes = Data()
@@ -61,16 +61,16 @@ import Foundation
                 // Valid error types
                 break
             default:
-                Issue.record("Unexpected BlazeBinaryError: \(error)")
+                XCTFail("Unexpected BlazeBinaryError: \(error)")
             }
         } catch {
-            Issue.record("Unexpected error type: \(error)")
+            XCTFail("Unexpected error type: \(error)")
         }
     }
 }
 
 // Fuzz test: Corrupted varints
-@Test func fuzzCorruptedVarints() {
+func fuzzCorruptedVarints() {
     for _ in 0..<100 {
         // Create varint with too many continuation bytes
         var corrupted = Data()
@@ -79,14 +79,14 @@ import Foundation
         }
         
         let decoder = BlazeBinaryDecoder(data: corrupted)
-        #expect(throws: BlazeBinaryError.self) {
-            _ = try decoder.decodeInt()
+        XCTAssertThrowsError(try decoder.decodeInt()) { error in
+            XCTAssertTrue(error is BlazeBinaryError)
         }
     }
 }
 
 // Fuzz test: Oversized frames
-@Test func fuzzOversizedFrames() {
+func fuzzOversizedFrames() {
     for _ in 0..<100 {
         // Create frame with oversized length prefix
         var frame = Data()
@@ -96,14 +96,17 @@ import Foundation
         let parser = BlazeFrameParser()
         try? parser.append(frame)
         
-        #expect(throws: BlazeBinaryError.invalidFrameLength) {
-            _ = try parser.nextFrame()
+        XCTAssertThrowsError(try parser.nextFrame()) { error in
+            XCTAssertTrue(error is BlazeBinaryError)
+            if let bbError = error as? BlazeBinaryError {
+                XCTAssertEqual(bbError, BlazeBinaryError.invalidFrameLength)
+            }
         }
     }
 }
 
 // Fuzz test: Negative/zero lengths
-@Test func fuzzInvalidLengths() {
+func fuzzInvalidLengths() {
     // Zero length frame
     var zeroFrame = Data()
     let zeroLength = UInt32(0).bigEndian
@@ -112,13 +115,16 @@ import Foundation
     let parser = BlazeFrameParser()
     try? parser.append(zeroFrame)
     
-    #expect(throws: BlazeBinaryError.invalidFrameLength) {
-        _ = try parser.nextFrame()
-    }
+    XCTAssertThrowsError(try parser.nextFrame()) { error in
+            XCTAssertTrue(error is BlazeBinaryError)
+            if let bbError = error as? BlazeBinaryError {
+                XCTAssertEqual(bbError, BlazeBinaryError.invalidFrameLength)
+            }
+        }
 }
 
 // Fuzz test: Partial/truncated frames
-@Test func fuzzPartialFrames() throws {
+func fuzzPartialFrames() throws {
     for _ in 0..<100 {
         let payload = Data(repeating: 0x42, count: 1000)
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
@@ -133,23 +139,23 @@ import Foundation
         // Should return nil (need more data) or throw, but not crash
         do {
             let result = try parser.nextFrame()
-            #expect(result == nil) // Partial frame should return nil
+            XCTAssert(result == nil) // Partial frame should return nil
         } catch let error as BlazeBinaryError {
             switch error {
             case .truncated, .invalidFrameLength:
                 // Valid for partial frames
                 break
             default:
-                Issue.record("Unexpected error for partial frame: \(error)")
+                XCTFail("Unexpected error for partial frame: \(error)")
             }
         } catch {
-            Issue.record("Unexpected error type: \(error)")
+            XCTFail("Unexpected error type: \(error)")
         }
     }
 }
 
 // Fuzz test: Packed garbage data
-@Test func fuzzPackedGarbage() {
+func fuzzPackedGarbage() {
     for _ in 0..<500 {
         let length = Int.random(in: 100...5000)
         var garbage = Data()
@@ -167,7 +173,7 @@ import Foundation
             while frameCount < 100 { // Limit iterations
                 if let frame = try parser.nextFrame() {
                     frameCount += 1
-                    #expect(frame.count <= BlazeFrameEncoder.maxFrameSize)
+                    XCTAssert(frame.count <= BlazeFrameEncoder.maxFrameSize)
                 } else {
                     break
                 }
@@ -179,13 +185,13 @@ import Foundation
                 break
             }
         } catch {
-            Issue.record("Unexpected error with garbage data: \(error)")
+            XCTFail("Unexpected error with garbage data: \(error)")
         }
     }
 }
 
 // Fuzz test: Stress test with many operations
-@Test func fuzzStressTest() {
+func fuzzStressTest() {
     let encoder = BlazeBinaryEncoder()
     var randomValues: [Int] = []
     
@@ -207,9 +213,9 @@ import Foundation
     for expected in randomValues {
         do {
             let decoded = try decoder.decodeInt()
-            #expect(decoded == expected, "Failed to round-trip value: \(expected), got: \(decoded)")
+            XCTAssert(decoded == expected, "Failed to round-trip value: \(expected), got: \(decoded)")
         } catch {
-            Issue.record("Failed to decode value \(expected): \(error)")
+            XCTFail("Failed to decode value \(expected): \(error)")
         }
     }
 }
