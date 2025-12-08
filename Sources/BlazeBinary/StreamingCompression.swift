@@ -7,7 +7,9 @@
 //
 
 import Foundation
+#if canImport(Compression)
 import Compression
+#endif
 
 /// Streaming compression context for incremental compression/decompression.
 /// 
@@ -26,6 +28,9 @@ public class BlazeStreamingCompressor {
         guard mode != .none else {
             throw BlazeBinaryError.decodeFailed("Streaming compression requires LZ4 or LZFSE")
         }
+        #if !canImport(Compression)
+        throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
+        #endif
         self.mode = mode
         self.accumulatedData = Data()
         self.chunkSize = chunkSize
@@ -78,6 +83,9 @@ public class BlazeStreamingDecompressor {
         guard mode != .none else {
             throw BlazeBinaryError.decodeFailed("Streaming decompression requires LZ4 or LZFSE")
         }
+        #if !canImport(Compression)
+        throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
+        #endif
         self.mode = mode
         self.accumulatedData = Data()
         self.estimatedOutputSize = estimatedOutputSize

@@ -7,7 +7,9 @@
 //
 
 import Foundation
+#if canImport(Compression)
 import Compression
+#endif
 
 /// Compression mode for BlazeBinary frames.
 public enum CompressionMode: UInt8 {
@@ -38,6 +40,7 @@ public enum BlazeCompression {
             return data
         }
         
+        #if canImport(Compression)
         let algorithm: compression_algorithm
         switch mode {
         case .none:
@@ -70,6 +73,10 @@ public enum BlazeCompression {
         
         compressedData.count = compressedSize
         return compressedData
+        #else
+        // Compression not available on this platform
+        throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
+        #endif
     }
     
     /// Decompresses data using the specified compression mode.
@@ -88,6 +95,7 @@ public enum BlazeCompression {
             return data
         }
         
+        #if canImport(Compression)
         let algorithm: compression_algorithm
         switch mode {
         case .none:
@@ -149,6 +157,10 @@ public enum BlazeCompression {
         
         decompressedData.count = result
         return decompressedData
+        #else
+        // Compression not available on this platform
+        throw BlazeBinaryError.decodeFailed("Compression not supported on this platform")
+        #endif
     }
 }
 

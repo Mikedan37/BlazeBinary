@@ -169,7 +169,7 @@ final class DHProtocolIntegrationTests: XCTestCase {
             // Key agreement succeeded - this is valid for X25519
         } catch {
             // Key agreement failed - also acceptable
-            XCTAssertTrue(error is BlazeBinaryError)
+                XCTAssertTrue(error is BlazeBinaryError)
         }
     }
     

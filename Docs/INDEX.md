@@ -1,6 +1,6 @@
 # BlazeBinary Documentation Index
 
-_Last updated: February 2025_  
+_Last updated: February 2025_
 _Protocol Version: v1.3.0_
 
 BlazeBinary is a deterministic binary encoding format and transport framing protocol designed for high-performance distributed systems. It provides compact binary representation, guaranteed determinism (same input → same bytes), and cross-platform compatibility.

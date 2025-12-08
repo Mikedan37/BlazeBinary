@@ -191,7 +191,7 @@ public extension BlazeBinaryError {
                 return .authenticationFailed
             }
             return .decryptionFailed(msg)
-        case .invalidSession(let msg):
+        case .invalidSession:
             return .invalidKeyMaterial
         default:
             return nil

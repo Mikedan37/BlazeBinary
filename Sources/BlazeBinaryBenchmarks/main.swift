@@ -58,7 +58,7 @@ class BenchmarkRunner {
         let startWall = Date()
         let startCPU = ProcessInfo.processInfo.systemUptime
         
-        for _ in 0..<iterations {
+    for _ in 0..<iterations {
             let iterStart = Date()
             try operation()
             let iterElapsed = Date().timeIntervalSince(iterStart)
@@ -133,7 +133,7 @@ class BenchmarkRunner {
             print("    min: \(String(format: "%.2f", result.percentiles.min * 1_000_000)) μs")
             print("    max: \(String(format: "%.2f", result.percentiles.max * 1_000_000)) μs")
             print()
-        }
+    }
     }
     
     func exportJSON() -> String {
@@ -219,19 +219,19 @@ print("This may take a few minutes...\n")
 // MARK: - Varint Benchmarks
 
 print("=== Varint Encoding Benchmarks ===")
-try runner.runBenchmark(name: "Varint encode (small: 42)", iterations: 100000) {
+_ = runner.runBenchmark(name: "Varint encode (small: 42)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(42)
     _ = encoder.encodedData()
 }
 
-try runner.runBenchmark(name: "Varint encode (medium: 300)", iterations: 100000) {
+_ = runner.runBenchmark(name: "Varint encode (medium: 300)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(300)
     _ = encoder.encodedData()
 }
 
-try runner.runBenchmark(name: "Varint encode (large: Int.max)", iterations: 100000) {
+_ = runner.runBenchmark(name: "Varint encode (large: Int.max)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(Int.max)
     _ = encoder.encodedData()
@@ -251,17 +251,17 @@ let encoderLarge = BlazeBinaryEncoder()
 encoderLarge.encode(Int.max)
 let dataLarge = encoderLarge.encodedData()
 
-try runner.runBenchmark(name: "Varint decode (small)", iterations: 100000) {
+_ = try runner.runBenchmark(name: "Varint decode (small)", iterations: 100000) {
     let decoder = BlazeBinaryDecoder(data: dataSmall)
     _ = try decoder.decodeInt()
 }
 
-try runner.runBenchmark(name: "Varint decode (medium)", iterations: 100000) {
+_ = try runner.runBenchmark(name: "Varint decode (medium)", iterations: 100000) {
     let decoder = BlazeBinaryDecoder(data: dataMedium)
     _ = try decoder.decodeInt()
 }
 
-try runner.runBenchmark(name: "Varint decode (large)", iterations: 100000) {
+_ = try runner.runBenchmark(name: "Varint decode (large)", iterations: 100000) {
     let decoder = BlazeBinaryDecoder(data: dataLarge)
     _ = try decoder.decodeInt()
 }
@@ -273,7 +273,7 @@ let dataSizes = [128, 1024, 4 * 1024, 256 * 1024]
 
 for size in dataSizes {
     let testData = Data(repeating: 0x42, count: size)
-    try runner.runBenchmark(
+    _ = runner.runBenchmark(
         name: "Data encode (\(size) bytes)",
         iterations: size < 1024 ? 10000 : (size < 4096 ? 1000 : 100),
         payloadSize: size
@@ -291,7 +291,7 @@ for size in dataSizes {
     encoder.encode(testData)
     let encoded = encoder.encodedData()
     
-    try runner.runBenchmark(
+    _ = try runner.runBenchmark(
         name: "Data decode (\(size) bytes)",
         iterations: size < 1024 ? 10000 : (size < 4096 ? 1000 : 100),
         payloadSize: size
@@ -308,7 +308,7 @@ let frameSizes = [128, 1024, 4 * 1024, 32 * 1024]
 
 for size in frameSizes {
     let payload = Data(repeating: 0xAA, count: size)
-    try runner.runBenchmark(
+    _ = try runner.runBenchmark(
         name: "Frame encode (\(size) bytes)",
         iterations: size < 1024 ? 5000 : (size < 4096 ? 500 : 50),
         payloadSize: size
@@ -322,7 +322,7 @@ for size in frameSizes {
     let payload = Data(repeating: 0xAA, count: size)
     let frame = try BlazeFrameEncoder.encodeFrame(payload)
     
-    try runner.runBenchmark(
+    _ = try runner.runBenchmark(
         name: "Frame decode (\(size) bytes)",
         iterations: size < 1024 ? 5000 : (size < 4096 ? 500 : 50),
         payloadSize: size
@@ -352,7 +352,7 @@ let aeadSizes = [128, 1024, 4 * 1024]
 
 for size in aeadSizes {
     let plaintext = Data(repeating: 0x55, count: size)
-    try runner.runBenchmark(
+    _ = try runner.runBenchmark(
         name: "AEAD encrypt (\(size) bytes)",
         iterations: size < 1024 ? 5000 : 500,
         payloadSize: size
@@ -366,7 +366,7 @@ for size in aeadSizes {
     let plaintext = Data(repeating: 0x55, count: size)
     let encrypted = try! clientSession.makeEncryptedFrame(from: plaintext)
     
-    try runner.runBenchmark(
+    _ = try runner.runBenchmark(
         name: "AEAD decrypt (\(size) bytes)",
         iterations: size < 1024 ? 5000 : 500,
         payloadSize: size
@@ -380,7 +380,7 @@ for size in aeadSizes {
 print("\n=== Compression Benchmarks ===")
 let compressibleData = Data((0..<4096).map { UInt8($0 % 256) })
 
-try runner.runBenchmark(
+_ = try runner.runBenchmark(
     name: "LZ4 compress (4KB)",
     iterations: 1000,
     payloadSize: 4096
@@ -388,7 +388,7 @@ try runner.runBenchmark(
     _ = try BlazeCompression.compress(compressibleData, mode: .lz4)
 }
 
-try runner.runBenchmark(
+_ = try runner.runBenchmark(
     name: "LZFSE compress (4KB)",
     iterations: 1000,
     payloadSize: 4096
@@ -399,7 +399,7 @@ try runner.runBenchmark(
 let lz4Compressed = try! BlazeCompression.compress(compressibleData, mode: .lz4)
 let lzfseCompressed = try! BlazeCompression.compress(compressibleData, mode: .lzfse)
 
-try runner.runBenchmark(
+_ = try runner.runBenchmark(
     name: "LZ4 decompress (4KB)",
     iterations: 1000,
     payloadSize: 4096
@@ -407,7 +407,7 @@ try runner.runBenchmark(
     _ = try BlazeCompression.decompress(lz4Compressed, mode: .lz4, originalSize: 4096)
 }
 
-try runner.runBenchmark(
+_ = try runner.runBenchmark(
     name: "LZFSE decompress (4KB)",
     iterations: 1000,
     payloadSize: 4096
