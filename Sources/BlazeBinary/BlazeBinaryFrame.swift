@@ -347,6 +347,14 @@ public class BlazeFrameParser {
                 throw BlazeBinaryError.invalidFrameLength
             }
             
+            // Validate range before subdata extraction
+            guard payloadStartIndex < payloadEndIndex else {
+                throw BlazeBinaryError.decodeFailed("Invalid payload range: start=\(payloadStartIndex), end=\(payloadEndIndex)")
+            }
+            guard payloadEndIndex <= buffer.count else {
+                throw BlazeBinaryError.decodeFailed("Payload end index out of bounds: \(payloadEndIndex) > \(buffer.count)")
+            }
+            
             var payload = buffer.subdata(in: payloadStartIndex..<payloadEndIndex)
             
             // Ensure payload was extracted correctly
@@ -384,8 +392,15 @@ public class BlazeFrameParser {
                 }
                 
                 // Safe to access payload[0] now - we've verified payload is not empty and has at least 29 bytes
-                guard payload[0] == SecureFrameType.encrypted.rawValue else {
-                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
+                // Use withUnsafeBytes for safer access on Linux
+                let frameTypeByte: UInt8 = payload.withUnsafeBytes { bytes in
+                    guard bytes.count > 0 else {
+                        return 0xFF // Invalid value
+                    }
+                    return bytes[0]
+                }
+                guard frameTypeByte == SecureFrameType.encrypted.rawValue else {
+                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch: got \(frameTypeByte), expected \(SecureFrameType.encrypted.rawValue)")
                 }
                 
                 if var session = secureSession {
