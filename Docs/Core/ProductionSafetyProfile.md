@@ -4,7 +4,7 @@
 
 For related documentation, see:
 - [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Encoding format specification
-- [THREAT_MODEL.md](THREAT_MODEL.md) - Security analysis
+- [../Security/THREAT_MODEL.md](../Security/THREAT_MODEL.md) - Security analysis
 - [FaultToleranceChecklist.md](FaultToleranceChecklist.md) - Engineering checklist
 
 This document explains what safety guarantees BlazeBinary provides and how they are enforced.

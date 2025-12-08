@@ -326,6 +326,6 @@ All failure modes MUST be tested:
 
 **Related Documents**:
 - [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Protocol specification
-- [THREAT_MODEL.md](THREAT_MODEL.md) - Security threat model
+- [../Security/THREAT_MODEL.md](../Security/THREAT_MODEL.md) - Security threat model
 - [SECURITY.md](SECURITY.md) - Security documentation
 

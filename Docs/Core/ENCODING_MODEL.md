@@ -348,5 +348,5 @@ encoder.encode(nil as String?)  // Encodes: <bool=false>
 - [Specification](SPECIFICATION_v1.3.md)
 - [Architecture](ARCHITECTURE.md)
 - [Frame Protocol](FRAME_PROTOCOL.md)
-- [Benchmarks](BENCHMARKS.md)
+- [Benchmarks](../Performance/BENCHMARKS.md)
 

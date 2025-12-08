@@ -559,7 +559,7 @@ let decompressed = try parser.nextFrame() // Automatically decompressed based on
 - [Specification](SPECIFICATION_v1.3.md)
 - [Encoding Model](ENCODING_MODEL.md)
 - [Architecture](ARCHITECTURE.md)
-- [Threat Model](THREAT_MODEL.md)
+- [Threat Model](../Security/THREAT_MODEL.md)
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [THREAT_MODEL.md](THREAT_MODEL.md) - Security threat model
+- [../Security/THREAT_MODEL.md](../Security/THREAT_MODEL.md) - Security threat model
 

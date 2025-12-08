@@ -451,8 +451,8 @@ This document has no IANA actions.
 
 - [FRAME_PROTOCOL.md](FRAME_PROTOCOL.md) - Frame protocol specification
 - [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
-- [THREAT_MODEL.md](THREAT_MODEL.md) - Security threat model
-- [BENCHMARKS.md](BENCHMARKS.md) - Performance benchmarks
+- [../Security/THREAT_MODEL.md](../Security/THREAT_MODEL.md) - Security threat model
+- [../Performance/BENCHMARKS.md](../Performance/BENCHMARKS.md) - Performance benchmarks
 
 ## Appendix A: Grammar
 
@@ -520,7 +520,7 @@ struct    ::= field+
 - [Encoding Model](ENCODING_MODEL.md)
 - [Frame Protocol](FRAME_PROTOCOL.md)
 - [Architecture](ARCHITECTURE.md)
-- [Threat Model](THREAT_MODEL.md)
+- [Threat Model](../Security/THREAT_MODEL.md)
 - [Cross-Language Decoder](CROSS_LANGUAGE_DECODER.md)
 
 **Document Status**: This is a draft specification. Feedback and contributions welcome.

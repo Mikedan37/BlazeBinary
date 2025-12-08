@@ -5,7 +5,7 @@
 For related documentation, see:
 - [SPECIFICATION_v1.3.md](SPECIFICATION_v1.3.md) - Encoding format specification
 - [ProductionSafetyProfile.md](ProductionSafetyProfile.md) - Safety guarantees
-- [THREAT_MODEL.md](THREAT_MODEL.md) - Security analysis
+- [../Security/THREAT_MODEL.md](../Security/THREAT_MODEL.md) - Security analysis
 
 This checklist can be used by engineers to verify that BlazeBinary meets production-grade requirements.
 
