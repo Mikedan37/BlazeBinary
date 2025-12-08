@@ -291,20 +291,16 @@ public class BlazeFrameParser {
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
                 // Read potential payload length (bytes 2-5)
                 if buffer.count >= 6 {
-                    // Explicit range validation before subdata
-                    guard 2 < 6 && 6 <= buffer.count else {
-                        return nil // Invalid range
-                    }
-                    let lengthBytes = buffer.subdata(in: 2..<6)
-                    let potentialLength = lengthBytes.withUnsafeBytes { bytes in
-                        guard bytes.count >= 4 else {
+                    // Use withUnsafeBytes to read directly - safer than subdata
+                    let potentialLength = buffer.withUnsafeBytes { bytes -> UInt32 in
+                        guard bytes.count >= 6 else {
                             return UInt32(0)
                         }
                         var value: UInt32 = 0
-                        value |= UInt32(bytes[0]) << 24
-                        value |= UInt32(bytes[1]) << 16
-                        value |= UInt32(bytes[2]) << 8
-                        value |= UInt32(bytes[3])
+                        value |= UInt32(bytes[2]) << 24
+                        value |= UInt32(bytes[3]) << 16
+                        value |= UInt32(bytes[4]) << 8
+                        value |= UInt32(bytes[5])
                         return value
                     }
                     
@@ -350,20 +346,16 @@ public class BlazeFrameParser {
             guard buffer.count >= 6 else {
                 return nil // Need more data
             }
-            // Explicit range validation before subdata
-            guard 2 < 6 && 6 <= buffer.count else {
-                throw BlazeBinaryError.decodeFailed("Invalid range for length bytes: 2..<6, buffer.count=\(buffer.count)")
-            }
-            let lengthBytes = buffer.subdata(in: 2..<6)
-            let payloadLength = lengthBytes.withUnsafeBytes { bytes in
-                guard bytes.count >= 4 else {
+            // Use withUnsafeBytes to read directly - safer than subdata
+            let payloadLength = buffer.withUnsafeBytes { bytes -> UInt32 in
+                guard bytes.count >= 6 else {
                     return UInt32(0)
                 }
                 var value: UInt32 = 0
-                value |= UInt32(bytes[0]) << 24
-                value |= UInt32(bytes[1]) << 16
-                value |= UInt32(bytes[2]) << 8
-                value |= UInt32(bytes[3])
+                value |= UInt32(bytes[2]) << 24
+                value |= UInt32(bytes[3]) << 16
+                value |= UInt32(bytes[4]) << 8
+                value |= UInt32(bytes[5])
                 return value
             }
             
