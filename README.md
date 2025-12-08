@@ -4,6 +4,8 @@ A production-grade, deterministic binary encoding/decoding library for Swift. Bl
 
 ## Quick Start
 
+Get started with BlazeBinary in seconds. Define your types, encode, and decode with a clean, type-safe API.
+
 ```swift
 import BlazeBinary
 
@@ -622,8 +624,7 @@ graph LR
 
 ### Basic Encoding & Decoding
 
-<details>
-<summary><b>View Example</b></summary>
+Encode and decode primitive types with a simple, type-safe API.
 
 ```swift
 import BlazeBinary
@@ -648,14 +649,11 @@ let string = try decoder.decodeString()      // "Hello, World!"
 let data = try decoder.decodeData()          // Data([0x01, 0x02, 0x03])
 ```
 
-</details>
+---
 
 ### Custom Types
 
-> **Important:** Field encoding order must match decoding order exactly.
-
-<details>
-<summary><b>View Implementation</b></summary>
+Define your own types by conforming to `BlazeBinaryCodable`. Field encoding order must match decoding order exactly.
 
 ```swift
 struct Person: BlazeBinaryCodable {
@@ -684,7 +682,19 @@ struct Person: BlazeBinaryCodable {
 }
 ```
 
-</details>
+**Usage:**
+
+```swift
+let person = Person(id: UUID(), name: "Alice", age: 30, active: true)
+let encoder = BlazeBinaryEncoder()
+try encoder.encode(person)
+let data = encoder.encodedData()
+
+let decoder = BlazeBinaryDecoder(data: data)
+let decoded = try decoder.decode(Person.self)
+```
+
+---
 
 **Usage:**
 
@@ -700,8 +710,7 @@ let decoded = try decoder.decode(Person.self)
 
 ### Arrays
 
-<details>
-<summary><b>View Example</b></summary>
+Encode and decode collections with built-in array support.
 
 ```swift
 struct WorkStep: BlazeBinaryCodable {
@@ -732,12 +741,11 @@ struct WorkPlan: BlazeBinaryCodable {
 }
 ```
 
-</details>
+---
 
 ### Frame Encoding & Parsing
 
-<details>
-<summary><b>View Frame Examples</b></summary>
+For network protocols, wrap payloads in frames with length prefixes for message boundaries.
 
 **Encoding:**
 
@@ -748,6 +756,8 @@ let frame = try BlazeFrameEncoder.encodeFrame(payload)
 ```
 
 **Streaming Parsing:**
+
+Incremental parsing for network streams that arrive in chunks.
 
 ```swift
 let parser = BlazeFrameParser()
@@ -763,12 +773,11 @@ while let payload = try parser.nextFrame() {
 
 > **Note:** `nextFrame()` returns `nil` when more data is needed.
 
-</details>
+---
 
 ### Complete Example: Network Protocol
 
-<details>
-<summary><b>View Full Example</b></summary>
+A complete example showing server-client communication with frame-based messaging.
 
 **Message Type:**
 
@@ -818,8 +827,6 @@ if let payload = try parser.nextFrame() {
     print("Received: \(message.content)")
 }
 ```
-
-</details>
 
 ---
 
@@ -891,10 +898,11 @@ Error cases:
 
 ## Safety & Validation
 
-<details>
-<summary><b>View Safety Examples</b></summary>
+BlazeBinary enforces strict validation at every step to prevent security vulnerabilities and ensure data integrity.
 
 **Bounds Checking:**
+
+All decoding operations verify sufficient data is available before reading.
 
 ```swift
 let decoder = BlazeBinaryDecoder(data: Data([0x01, 0x02]))
@@ -905,6 +913,8 @@ let value = try decoder.decodeUInt32()  // Throws: BlazeBinaryError.truncated
 
 **Length Validation:**
 
+Variable-length fields are validated against configurable size limits.
+
 ```swift
 let decoder = BlazeBinaryDecoder(data: hugeData, maxAllowedLength: 1024)
 let data = try decoder.decodeData()  // Throws if length > 1024
@@ -914,6 +924,8 @@ let data = try decoder.decodeData()  // Throws if length > 1024
 
 **Frame Size Limits:**
 
+Frames are limited to prevent memory exhaustion attacks.
+
 ```swift
 let hugePayload = Data(repeating: 0, count: 6 * 1024 * 1024)
 let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // Throws: oversizedFrame
@@ -921,7 +933,7 @@ let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // Throws: oversized
 
 > Max frame: 5 MB | Max buffer: 10 MB
 
-</details>
+---
 
 ### Invalid Data Rejection
 
