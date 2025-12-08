@@ -2,11 +2,11 @@ import Foundation
 import BlazeBinary
 
 func measure(_ name: String, iterations: Int = 10000, _ block: () throws -> Void) rethrows {
-    let start = CFAbsoluteTimeGetCurrent()
+    let start = Date()
     for _ in 0..<iterations {
         try block()
     }
-    let elapsed = CFAbsoluteTimeGetCurrent() - start
+    let elapsed = Date().timeIntervalSince(start)
     
     // Ensure each benchmark runs <0.1 seconds
     if elapsed > 0.1 {
