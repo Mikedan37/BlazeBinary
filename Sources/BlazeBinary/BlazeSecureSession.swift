@@ -164,10 +164,24 @@ public struct BlazeSecureSession {
         }
         let ciphertextStart = 13
         let ciphertextEnd = payload.count - 16
-        guard ciphertextStart < ciphertextEnd else {
+        // Allow empty ciphertext (ciphertextStart == ciphertextEnd) for empty plaintext
+        guard ciphertextStart <= ciphertextEnd else {
             throw BlazeBinaryError.encryptionFailed("Invalid ciphertext range: start=\(ciphertextStart), end=\(ciphertextEnd)")
         }
-        let ciphertext = payload.subdata(in: ciphertextStart..<ciphertextEnd)
+        // Use withUnsafeBytes for safe extraction
+        let ciphertext = payload.withUnsafeBytes { bytes -> Data in
+            guard bytes.count >= payload.count else {
+                return Data()  // Return empty on error
+            }
+            if ciphertextStart == ciphertextEnd {
+                // Empty ciphertext (empty plaintext case)
+                return Data()
+            }
+            return Data(bytes[ciphertextStart..<ciphertextEnd])
+        }
+        guard ciphertext.count == (ciphertextEnd - ciphertextStart) else {
+            throw BlazeBinaryError.encryptionFailed("Ciphertext extraction failed: expected \(ciphertextEnd - ciphertextStart) bytes, got \(ciphertext.count)")
+        }
         
         // Construct AAD (same as encryption)
         var aad = Data()

@@ -171,24 +171,49 @@ public struct BlazeSecureHandshake {
     private func parseHandshakeMessage(_ data: Data) throws -> (type: HandshakeType, remoteKey: Data) {
         // Exact length: 1 (version) + 1 (type) + 2 (flags) + 32 (key) = 36 bytes
         guard data.count == 36 else {
-            throw BlazeBinaryError.invalidHandshake("Handshake message wrong length: expected exactly 36 bytes, got \(data.count)")
+            if data.count < 36 {
+                throw BlazeBinaryError.invalidHandshake("Handshake message too short: expected 36 bytes, got \(data.count)")
+            } else {
+                throw BlazeBinaryError.invalidHandshake("Handshake message too long: expected 36 bytes, got \(data.count)")
+            }
         }
         
-        // Check version
-        let version = data[0]
+        // Check version - use withUnsafeBytes for safety
+        let version = data.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 1 else {
+                return 0xFF  // Invalid sentinel
+            }
+            return bytes[0]
+        }
         guard version == 0x01 else {
             throw BlazeBinaryError.invalidHandshake("Unsupported handshake version: \(version) (expected 0x01)")
         }
         
-        // Check type
-        let typeByte = data[1]
+        // Check type - use withUnsafeBytes for safety
+        let typeByte = data.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 2 else {
+                return 0xFF  // Invalid sentinel
+            }
+            return bytes[1]
+        }
+        guard typeByte != 0xFF else {
+            throw BlazeBinaryError.invalidHandshake("Invalid handshake message format")
+        }
         guard let type = HandshakeType(rawValue: typeByte) else {
             throw BlazeBinaryError.invalidHandshake("Invalid handshake type: \(typeByte) (expected 0x01 or 0x02)")
         }
         
         // Skip flags (bytes 2-3, reserved for future use)
-        // Extract public key (bytes 4-35, exactly 32 bytes)
-        let remoteKey = data.subdata(in: 4..<36)
+        // Extract public key (bytes 4-35, exactly 32 bytes) - use withUnsafeBytes for safety
+        let remoteKey = data.withUnsafeBytes { bytes -> Data in
+            guard bytes.count >= 36 else {
+                return Data()  // Return empty on error
+            }
+            return Data(bytes[4..<36])
+        }
+        guard remoteKey.count == 32 else {
+            throw BlazeBinaryError.invalidHandshake("Failed to extract remote key: expected 32 bytes, got \(remoteKey.count)")
+        }
         
         return (type, remoteKey)
     }
