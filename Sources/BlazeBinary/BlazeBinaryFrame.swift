@@ -329,7 +329,17 @@ public class BlazeFrameParser {
             guard buffer.count >= payloadEndIndex else {
                 return nil // Need more data
             }
+            // Validate payload length before extraction
+            guard payloadLengthInt > 0 else {
+                throw BlazeBinaryError.invalidFrameLength
+            }
+            
             var payload = buffer.subdata(in: payloadStartIndex..<payloadEndIndex)
+            
+            // Ensure payload was extracted correctly
+            guard payload.count == payloadLengthInt else {
+                throw BlazeBinaryError.decodeFailed("Payload extraction failed: expected \(payloadLengthInt) bytes, got \(payload.count)")
+            }
             
             // Parse compression mode (explicit, no detection)
             guard let compressionMode = CompressionMode(rawValue: compressionModeByte) else {
@@ -340,6 +350,10 @@ public class BlazeFrameParser {
             if compressionMode != .none {
                 do {
                     payload = try BlazeCompression.decompress(payload, mode: compressionMode, originalSize: nil)
+                    // After decompression, payload should not be empty
+                    guard !payload.isEmpty else {
+                        throw BlazeBinaryError.decodeFailed("Decompression resulted in empty payload")
+                    }
                 } catch {
                     throw BlazeBinaryError.decodeFailed("Decompression failed: \(error.localizedDescription)")
                 }
@@ -348,10 +362,15 @@ public class BlazeFrameParser {
             // Handle secure session frame types
             if frameType == SecureFrameType.encrypted.rawValue {
                 // Encrypted frame (minimum size: 1 byte frameType + 12 byte nonce + 16 byte tag = 29 bytes)
+                guard !payload.isEmpty else {
+                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload is empty")
+                }
+                
                 guard payload.count >= 29 else {
                     throw BlazeBinaryError.decodeFailed("Encrypted frame too small: \(payload.count) bytes (minimum 29)")
                 }
                 
+                // Safe to access payload[0] now - we've verified payload is not empty and has at least 29 bytes
                 guard payload[0] == SecureFrameType.encrypted.rawValue else {
                     throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
                 }
