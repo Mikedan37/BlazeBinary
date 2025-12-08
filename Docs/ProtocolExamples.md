@@ -3,7 +3,7 @@
 **Purpose**: This document provides real-world examples of encoding simple and nested objects using BlazeBinary.
 
 For related documentation, see:
-- [Spec.md](Spec.md) - Complete encoding format specification
+- [SPECIFICATION.md](SPECIFICATION.md) - Complete encoding format specification
 - [FrameProtocol.md](FrameProtocol.md) - Frame format and parsing
 - [README.md](../README.md) - Quick start and overview
 

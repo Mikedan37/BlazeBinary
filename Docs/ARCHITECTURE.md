@@ -62,8 +62,14 @@ graph LR
 - Support zero-copy decoding
 
 **Data Flow**:
-```
-Binary Data → Decoder → Swift Value
+
+```mermaid
+graph LR
+    A[Binary Data] --> B[Decoder] --> C[Swift Value]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#e8f5e9
 ```
 
 ### 3. Internal Utilities
@@ -94,9 +100,18 @@ Binary Data → Decoder → Swift Value
 - Support streaming protocols
 
 **Data Flow**:
-```
-Binary Data → Frame Encoder → Framed Data
-Framed Data → Frame Parser → Binary Data
+
+```mermaid
+graph LR
+    A[Binary Data] --> B[Frame Encoder] --> C[Framed Data]
+    D[Framed Data] --> E[Frame Parser] --> F[Binary Data]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#e8f5e9
+    style D fill:#e1f5ff
+    style E fill:#fff4e1
+    style F fill:#e8f5e9
 ```
 
 ## Module Interactions
@@ -119,37 +134,59 @@ graph TD
 
 ### Encoding Flow
 
-```
-1. Application creates Swift value
-2. Calls encoder.encode(value)
-3. Encoder calls value.blazeEncode(to: encoder)
-4. Encoder writes binary data to internal buffer
-5. Application calls encoder.encodedData()
-6. Returns Data with encoded bytes
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Value as Swift Value
+    participant Encoder as BlazeBinaryEncoder
+    participant Buffer as Internal Buffer
+    
+    App->>Value: Create Swift value
+    App->>Encoder: encoder.encode(value)
+    Encoder->>Value: value.blazeEncode(to: encoder)
+    Value->>Encoder: Encode fields
+    Encoder->>Buffer: Write binary data
+    App->>Encoder: encoder.encodedData()
+    Encoder->>App: Return Data with encoded bytes
 ```
 
 ### Decoding Flow
 
-```
-1. Application receives binary Data
-2. Creates BlazeBinaryDecoder(data: data)
-3. Calls decoder.decode(Type.self)
-4. Decoder reads binary data and validates
-5. Decoder calls Type.init(from: decoder)
-6. Returns decoded Swift value
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant Decoder as BlazeBinaryDecoder
+    participant Type as Swift Type
+    participant Data as Binary Data
+    
+    App->>Data: Receive binary Data
+    App->>Decoder: BlazeBinaryDecoder(data: data)
+    App->>Decoder: decoder.decode(Type.self)
+    Decoder->>Data: Read and validate binary data
+    Decoder->>Type: Type.init(from: decoder)
+    Type->>Decoder: Decode fields
+    Decoder->>App: Return decoded Swift value
 ```
 
 ### Frame Flow
 
-```
-1. Application encodes payload
-2. Calls BlazeFrameEncoder.encodeFrame(payload)
-3. Frame encoder adds 4-byte length prefix
-4. Returns framed Data
-5. Application sends over network
-6. Receiver appends to BlazeFrameParser
-7. Parser extracts complete frames
-8. Returns payload Data for decoding
+```mermaid
+sequenceDiagram
+    participant App as Application
+    participant FrameEnc as Frame Encoder
+    participant Network as Network Transport
+    participant FramePars as Frame Parser
+    participant Decoder as Decoder
+    
+    App->>App: Encode payload
+    App->>FrameEnc: BlazeFrameEncoder.encodeFrame(payload)
+    FrameEnc->>FrameEnc: Add 4-byte length prefix
+    FrameEnc->>App: Return framed Data
+    App->>Network: Send over network
+    Network->>FramePars: Append received data
+    FramePars->>FramePars: Extract complete frames
+    FramePars->>Decoder: Return payload Data
+    Decoder->>App: Decode payload
 ```
 
 ## Design Decisions

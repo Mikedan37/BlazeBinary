@@ -3,7 +3,7 @@
 **Purpose**: This document summarizes the comprehensive audit and improvements made to BlazeBinary.
 
 For related documentation, see:
-- [Spec.md](Spec.md) - Encoding format specification
+- [SPECIFICATION.md](SPECIFICATION.md) - Encoding format specification
 - [ProductionSafetyProfile.md](ProductionSafetyProfile.md) - Safety guarantees
 - [FaultToleranceChecklist.md](FaultToleranceChecklist.md) - Engineering checklist
 

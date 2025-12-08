@@ -84,7 +84,7 @@ This document verifies that all requirements from the Master Prompt have been im
 
 - **Location**: `Docs/`
 - **Files**:
-  -  `Spec.md` - Complete specification
+  -  `SPECIFICATION.md` - Complete specification
     - Varint format (LEB128)
     - Zigzag encoding
     - Length prefixes

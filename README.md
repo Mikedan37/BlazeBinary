@@ -66,11 +66,11 @@ Do not use BlazeBinary if you need:
 
 ## Documentation
 
-- **[Spec.md](Docs/Spec.md)** - Complete encoding format specification (varint, ZigZag, endianness, size limits)
-- **[FrameProtocol.md](Docs/FrameProtocol.md)** - Frame format and incremental parsing semantics
+- **[SPECIFICATION.md](Docs/SPECIFICATION.md)** - Complete encoding format specification (varint, ZigZag, endianness, size limits)
+- **[FRAME_PROTOCOL.md](Docs/FRAME_PROTOCOL.md)** - Frame format and incremental parsing semantics
 - **[ProtocolExamples.md](Docs/ProtocolExamples.md)** - Real-world usage examples
-- **[ArchitectureOverview.md](Docs/ArchitectureOverview.md)** - System architecture and component design
-- **[SecurityThreatModel.md](Docs/SecurityThreatModel.md)** - Security properties and threat model
+- **[ARCHITECTURE.md](Docs/ARCHITECTURE.md)** - System architecture and component design
+- **[THREAT_MODEL.md](Docs/THREAT_MODEL.md)** - Security properties and threat model
 - **[ProductionSafetyProfile.md](Docs/ProductionSafetyProfile.md)** - Safety guarantees and error handling
 - **[FaultToleranceChecklist.md](Docs/FaultToleranceChecklist.md)** - Engineering audit checklist
 
@@ -122,7 +122,7 @@ BlazeBinary is designed for high-performance, deterministic serialization in dis
 - **Fail-Fast Errors**: All errors are `BlazeBinaryError`, thrown immediately
 - **No Unsafe Operations**: Only Swift's safe `withUnsafeBytes` API used
 
-See [Spec.md](Docs/Spec.md) for complete format specification and [SecurityThreatModel.md](Docs/SecurityThreatModel.md) for security details.
+See [SPECIFICATION.md](Docs/SPECIFICATION.md) for complete format specification and [THREAT_MODEL.md](Docs/THREAT_MODEL.md) for security details.
 
 ---
 
@@ -521,7 +521,7 @@ struct Person: BlazeBinaryCodable {
 
 ## Frame Format
 
-> **Note**: See [FrameProtocol.md](Docs/FrameProtocol.md) for complete frame protocol specification, state machine, and incremental parsing details.
+> **Note**: See [FRAME_PROTOCOL.md](Docs/FRAME_PROTOCOL.md) for complete frame protocol specification, state machine, and incremental parsing details.
 
 Frames are used for IPC (Inter-Process Communication) and socket-based protocols. They provide message boundaries and length validation.
 
@@ -968,11 +968,11 @@ let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // 6 MB > 5 MB limit
 
 ## Related Documentation
 
-- **[Spec.md](Docs/Spec.md)** - Complete encoding format specification
-- **[FrameProtocol.md](Docs/FrameProtocol.md)** - Frame format and incremental parsing
+- **[SPECIFICATION.md](Docs/SPECIFICATION.md)** - Complete encoding format specification
+- **[FRAME_PROTOCOL.md](Docs/FRAME_PROTOCOL.md)** - Frame format and incremental parsing
 - **[ProtocolExamples.md](Docs/ProtocolExamples.md)** - Usage examples and patterns
-- **[ArchitectureOverview.md](Docs/ArchitectureOverview.md)** - System architecture
-- **[SecurityThreatModel.md](Docs/SecurityThreatModel.md)** - Security analysis
+- **[ARCHITECTURE.md](Docs/ARCHITECTURE.md)** - System architecture
+- **[THREAT_MODEL.md](Docs/THREAT_MODEL.md)** - Security analysis
 - **[ProductionSafetyProfile.md](Docs/ProductionSafetyProfile.md)** - Safety guarantees
 - **[FaultToleranceChecklist.md](Docs/FaultToleranceChecklist.md)** - Engineering checklist
 
