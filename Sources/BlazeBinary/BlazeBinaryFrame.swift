@@ -262,19 +262,15 @@ public class BlazeFrameParser {
         // v1.0 format: bytes 0-3 form a length prefix (big-endian UInt32)
         // Detection heuristic: If byte0 <= 0x02 AND byte1 <= 0x02 AND the resulting payload length is reasonable,
         // treat as v2.0. Otherwise, treat as v1.0.
-        let isV2Format: Bool
+        var isV2Format: Bool = false // Default to v1.0 format
         if buffer.count >= 6 {
             // Safe to access buffer[0] and buffer[1] - we've checked buffer.count >= 6
             guard buffer.count >= 2 else {
                 return nil // Need more data
             }
-            // Use withUnsafeBytes for safer access on Linux
-            let (byte0, byte1) = buffer.withUnsafeBytes { bytes in
-                guard bytes.count >= 2 else {
-                    return (UInt8(0xFF), UInt8(0xFF)) // Invalid values
-                }
-                return (bytes[0], bytes[1])
-            }
+            // Safe direct access - we've already checked buffer.count >= 6 and >= 2
+            let byte0 = buffer[0]
+            let byte1 = buffer[1]
             
             // Check if bytes 0-1 could be frameType + compressionMode
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
@@ -321,13 +317,9 @@ public class BlazeFrameParser {
             guard buffer.count >= 2 else {
                 return nil // Need more data (shouldn't happen, but defensive)
             }
-            // Use withUnsafeBytes for safer access on Linux
-            let (frameType, compressionModeByte) = buffer.withUnsafeBytes { bytes in
-                guard bytes.count >= 2 else {
-                    return (UInt8(0xFF), UInt8(0xFF)) // Invalid values
-                }
-                return (bytes[0], bytes[1])
-            }
+            // Safe direct access - we've already validated buffer.count >= 6 in detection
+            let frameType = buffer[0]
+            let compressionModeByte = buffer[1]
             
             // Read payload length (bytes 2-5, big-endian UInt32)
             guard buffer.count >= 6 else {
@@ -415,15 +407,8 @@ public class BlazeFrameParser {
                 }
                 
                 // Safe to access payload[0] now - we've verified payload is not empty and has at least 29 bytes
-                // Use withUnsafeBytes for safer access on Linux
-                let frameTypeByte: UInt8 = payload.withUnsafeBytes { bytes in
-                    guard bytes.count > 0 else {
-                        return 0xFF // Invalid value
-                    }
-                    return bytes[0]
-                }
-                guard frameTypeByte == SecureFrameType.encrypted.rawValue else {
-                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch: got \(frameTypeByte), expected \(SecureFrameType.encrypted.rawValue)")
+                guard payload[0] == SecureFrameType.encrypted.rawValue else {
+                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
                 }
                 
                 if var session = secureSession {
@@ -486,10 +471,23 @@ public class BlazeFrameParser {
                 return nil // Need more data
             }
             
-            // Extract payload (bytes 4+)
-            let payload = buffer.subdata(in: 4..<(4 + lengthInt))
+            // Extract payload (bytes 4+) - validate range
+            let payloadStart = 4
+            let payloadEnd = 4 + lengthInt
+            guard payloadStart < payloadEnd && payloadEnd <= buffer.count else {
+                throw BlazeBinaryError.decodeFailed("Invalid payload range: start=\(payloadStart), end=\(payloadEnd), buffer.count=\(buffer.count)")
+            }
+            let payload = buffer.subdata(in: payloadStart..<payloadEnd)
+            
+            // Validate payload extraction
+            guard payload.count == lengthInt else {
+                throw BlazeBinaryError.decodeFailed("Payload extraction failed: expected \(lengthInt) bytes, got \(payload.count)")
+            }
             
             // v1.0 format: no compression, no frameType (treat as plaintext)
+            guard buffer.count >= totalFrameSize else {
+                throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
+            }
             buffer.removeFirst(totalFrameSize)
             updateBackpressureState()
             return payload

@@ -152,13 +152,25 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         
         // Parse plaintext frame
         try parser.append(plaintextFrame)
-        let parsedPlaintext = try parser.nextFrame()
-        XCTAssertEqual(plaintextMessage, parsedPlaintext)
+        guard let parsedPlaintext = try parser.nextFrame() else {
+            XCTFail("Plaintext frame should be parsed")
+            return
+        }
+        XCTAssertEqual(plaintextMessage, parsedPlaintext, "Plaintext message should match")
         
         // Parse encrypted frame
         try parser.append(encryptedFrame)
-        let parsedEncrypted = try parser.nextFrame()
-        XCTAssertEqual(encryptedMessage, parsedEncrypted)
+        do {
+            let parsedEncrypted = try parser.nextFrame()
+            guard let parsedEncrypted = parsedEncrypted else {
+                XCTFail("Encrypted frame should be parsed (got nil)")
+                return
+            }
+            XCTAssertEqual(encryptedMessage, parsedEncrypted, "Encrypted message should match")
+        } catch {
+            XCTFail("Failed to parse encrypted frame: \(error)")
+            throw error
+        }
     }
     
     func testPlaintextFramesWithoutSession() throws {

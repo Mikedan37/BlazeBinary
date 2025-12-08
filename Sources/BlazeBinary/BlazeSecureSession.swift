@@ -129,9 +129,16 @@ public struct BlazeSecureSession {
             throw BlazeBinaryError.encryptionFailed("Encrypted frame too short: \(payload.count) bytes (minimum 29)")
         }
         
-        // Check frame type (safe to access - we've verified payload is not empty)
-        guard payload[0] == SecureFrameType.encrypted.rawValue else {
-            throw BlazeBinaryError.encryptionFailed("Invalid frame type for decryption: \(payload[0]) (expected 0x01)")
+        // Check frame type (safe to access - we've verified payload is not empty and has at least 29 bytes)
+        // Use withUnsafeBytes for safer access across platforms
+        let frameTypeByte = payload.withUnsafeBytes { bytes in
+            guard bytes.count > 0 else {
+                return UInt8(0xFF) // Invalid value
+            }
+            return bytes[0]
+        }
+        guard frameTypeByte == SecureFrameType.encrypted.rawValue else {
+            throw BlazeBinaryError.encryptionFailed("Invalid frame type for decryption: \(frameTypeByte) (expected 0x01)")
         }
         
         // Extract nonce (bytes 1-12) - validate range before extraction
