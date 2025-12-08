@@ -383,7 +383,7 @@ public class BlazeFrameParser {
                 throw BlazeBinaryError.invalidFrameLength
             }
             
-            // Validate range before subdata extraction
+            // Validate range before extraction
             guard payloadStartIndex < payloadEndIndex else {
                 throw BlazeBinaryError.decodeFailed("Invalid payload range: start=\(payloadStartIndex), end=\(payloadEndIndex)")
             }
@@ -394,11 +394,21 @@ public class BlazeFrameParser {
                 throw BlazeBinaryError.decodeFailed("Payload start index out of bounds: \(payloadStartIndex) (buffer.count=\(buffer.count))")
             }
             
-            var payload = buffer.subdata(in: payloadStartIndex..<payloadEndIndex)
+            // Extract payload using withUnsafeBytes - safer than subdata
+            var payload = buffer.withUnsafeBytes { bytes -> Data in
+                guard bytes.count >= payloadEndIndex else {
+                    return Data()  // Return empty on error
+                }
+                // Create Data by copying bytes explicitly
+                return Data(bytes[payloadStartIndex..<payloadEndIndex])
+            }
             
             // Ensure payload was extracted correctly
             guard payload.count == payloadLengthInt else {
                 throw BlazeBinaryError.decodeFailed("Payload extraction failed: expected \(payloadLengthInt) bytes, got \(payload.count)")
+            }
+            guard !payload.isEmpty else {
+                throw BlazeBinaryError.decodeFailed("Payload extraction resulted in empty data")
             }
             
             // Parse compression mode (explicit, no detection)
@@ -451,15 +461,20 @@ public class BlazeFrameParser {
                     buffer.removeFirst(totalFrameSize)
                     return decrypted
                 } else {
-                    // Validate payload has enough data for subdata
+                    // Validate payload has enough data for extraction
                     guard payload.count > 1 else {
-                        throw BlazeBinaryError.decodeFailed("Encrypted payload too small for subdata extraction")
+                        throw BlazeBinaryError.decodeFailed("Encrypted payload too small for extraction")
                     }
-                    // Explicit range validation before subdata
-                    guard 1 < payload.count && 1 >= 0 else {
-                        throw BlazeBinaryError.decodeFailed("Invalid range for encrypted data: 1..<\(payload.count)")
+                    // Extract encrypted data using withUnsafeBytes - safer than subdata
+                    let encryptedData = payload.withUnsafeBytes { bytes -> Data in
+                        guard bytes.count > 1 else {
+                            return Data()  // Return empty on error
+                        }
+                        return Data(bytes[1..<bytes.count])
                     }
-                    let encryptedData = payload.subdata(in: 1..<payload.count)
+                    guard !encryptedData.isEmpty else {
+                        throw BlazeBinaryError.decodeFailed("Failed to extract encrypted data")
+                    }
                     // Validate buffer has enough data before removing
                     guard buffer.count >= totalFrameSize else {
                         throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
@@ -514,7 +529,13 @@ public class BlazeFrameParser {
             guard payloadStart >= 0 && payloadStart < buffer.count else {
                 throw BlazeBinaryError.decodeFailed("Payload start index out of bounds: \(payloadStart) (buffer.count=\(buffer.count))")
             }
-            let payload = buffer.subdata(in: payloadStart..<payloadEnd)
+            // Extract payload using withUnsafeBytes - safer than subdata
+            let payload = buffer.withUnsafeBytes { bytes -> Data in
+                guard bytes.count >= payloadEnd else {
+                    return Data()  // Return empty on error
+                }
+                return Data(bytes[payloadStart..<payloadEnd])
+            }
             
             // Validate payload extraction
             guard payload.count == lengthInt else {
