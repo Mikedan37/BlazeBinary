@@ -1,0 +1,22 @@
+sequenceDiagram
+    participant App as Application
+    participant Enc as Encoder
+    participant FrameEnc as Frame Encoder
+    participant Network as Network
+    participant FramePars as Frame Parser
+    participant Dec as Decoder
+    
+    App->>Enc: encode(value)
+    Enc->>Enc: Binary encoding
+    Enc->>App: encodedData()
+    App->>FrameEnc: encodeFrame(payload)
+    FrameEnc->>FrameEnc: Add length prefix
+    FrameEnc->>App: frame
+    App->>Network: send(frame)
+    Network->>FramePars: append(data)
+    FramePars->>FramePars: Extract frame
+    FramePars->>App: nextFrame()
+    App->>Dec: decode(Type.self)
+    Dec->>Dec: Binary decoding
+    Dec->>App: decoded value
+

@@ -1,4 +1,9 @@
-// BlazeBinary - Deterministic binary encoding/decoding library for Swift
+//
+// BlazeBinary.swift
+// BlazeBinary
+//
+// Copyright (c) 2025 Michael Danylchuk
+// MIT License
 //
 // This module provides:
 // - BlazeBinaryEncoder/BlazeBinaryDecoder for encoding/decoding Swift values

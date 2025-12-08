@@ -5,6 +5,10 @@ import PackageDescription
 
 let package = Package(
     name: "BlazeBinary",
+    platforms: [
+        .macOS(.v12),
+        .iOS(.v15)
+    ],
     products: [
         .library(
             name: "BlazeBinary",

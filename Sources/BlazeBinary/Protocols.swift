@@ -1,3 +1,11 @@
+//
+// Protocols.swift
+// BlazeBinary
+//
+// Copyright (c) 2025 Michael Danylchuk
+// MIT License
+//
+
 /// Protocol for types that can be encoded to binary format.
 public protocol BlazeBinaryEncodable {
     /// Encodes the value into binary format using the provided encoder.

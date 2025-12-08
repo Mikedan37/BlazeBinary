@@ -19,19 +19,19 @@ func measure(_ name: String, iterations: Int = 10000, _ block: () throws -> Void
 
 // Benchmark: Varint Encode
 print("=== Varint Encode Benchmarks ===")
-try measure("Varint encode (small)", iterations: 100000) {
+measure("Varint encode (small)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(42)
     _ = encoder.encodedData()
 }
 
-try measure("Varint encode (medium)", iterations: 100000) {
+measure("Varint encode (medium)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(300)
     _ = encoder.encodedData()
 }
 
-try measure("Varint encode (large)", iterations: 100000) {
+measure("Varint encode (large)", iterations: 100000) {
     let encoder = BlazeBinaryEncoder()
     encoder.encode(Int.max)
     _ = encoder.encodedData()
@@ -72,7 +72,7 @@ let sizes = [1024, 8 * 1024, 32 * 1024, 256 * 1024]
 
 for size in sizes {
     let testData = Data(repeating: 0x42, count: size)
-    try measure("Data encode (\(size) bytes)", iterations: 1000) {
+    measure("Data encode (\(size) bytes)", iterations: 1000) {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(testData)
         _ = encoder.encodedData()

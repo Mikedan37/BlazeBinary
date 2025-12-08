@@ -1,0 +1,17 @@
+graph TD
+    A[Frame Buffer] --> B[Frame 1]
+    A --> C[Frame 2]
+    A --> D[Frame 3]
+    
+    B --> B1[Type: 1 byte]
+    B --> B2[Length: 4 bytes]
+    B --> B3[Payload: N bytes]
+    
+    C --> C1[Type: 1 byte]
+    C --> C2[Length: 4 bytes]
+    C --> C3[Payload: M bytes]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+

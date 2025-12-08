@@ -108,22 +108,23 @@ let decoded = try decoder.decode(Person.self)
 
 For `Person(id: UUID("550e8400-..."), name: "Alice", age: 30, active: true)`:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│ Field 1: id (UUID as String)                           │
-│   Varint(36): [0x24]                                   │
-│   UTF-8: "550e8400-e29b-41d4-a716-446655440000"        │
-├─────────────────────────────────────────────────────────┤
-│ Field 2: name (String)                                 │
-│   Varint(5): [0x05]                                    │
-│   UTF-8: "Alice"                                      │
-├─────────────────────────────────────────────────────────┤
-│ Field 3: age (Int)                                     │
-│   Varint(60): [0x3C]  (zigzag of 30)                   │
-├─────────────────────────────────────────────────────────┤
-│ Field 4: active (Bool)                                 │
-│   Byte: 0x01                                           │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[Person Record] --> B[Field 1: id]
+    A --> C[Field 2: name]
+    A --> D[Field 3: age]
+    A --> E[Field 4: active]
+    
+    B --> B1[Varint: 36<br/>UTF-8: UUID string]
+    C --> C1[Varint: 5<br/>UTF-8: Alice]
+    D --> D1[Varint: 60<br/>zigzag of 30]
+    E --> E1[Byte: 0x01]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#fff4e1
+    style D fill:#fff4e1
+    style E fill:#fff4e1
 ```
 
 ---
@@ -305,20 +306,21 @@ struct UserProfile: BlazeBinaryCodable {
 
 For `UserProfile(username: "alice", email: "alice@example.com", phone: nil)`:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│ Field 1: username                                       │
-│   Varint(5): [0x05]                                    │
-│   UTF-8: "alice"                                       │
-├─────────────────────────────────────────────────────────┤
-│ Field 2: email (optional)                              │
-│   Bool(present): 0x01                                  │
-│   Varint(17): [0x11]                                   │
-│   UTF-8: "alice@example.com"                           │
-├─────────────────────────────────────────────────────────┤
-│ Field 3: phone (optional)                              │
-│   Bool(present): 0x00  (nil)                           │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    A[UserProfile Record] --> B[Field 1: username]
+    A --> C[Field 2: email]
+    A --> D[Field 3: phone]
+    
+    B --> B1[Varint: 5<br/>UTF-8: alice]
+    C --> C1[Bool: present 0x01]
+    C1 --> C2[Varint: 17<br/>UTF-8: alice@example.com]
+    D --> D1[Bool: absent 0x00<br/>nil]
+    
+    style A fill:#e1f5ff
+    style B fill:#fff4e1
+    style C fill:#fff4e1
+    style D fill:#fff4e1
 ```
 
 ---

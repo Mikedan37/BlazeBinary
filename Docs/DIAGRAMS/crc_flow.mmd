@@ -1,0 +1,19 @@
+graph TD
+    A[Original Data] --> B[BlazeBinary Encode]
+    B --> C[Binary Payload]
+    C --> D[Calculate CRC32]
+    D --> E[Append CRC32]
+    E --> F[Framed Data]
+    
+    F --> G[Receive Frame]
+    G --> H[Extract Payload]
+    H --> I[Extract CRC32]
+    I --> J{CRC32 Valid?}
+    J -->|Yes| K[Decode Payload]
+    J -->|No| L[Reject - CRC Error]
+    K --> M[Decoded Value]
+    
+    style J fill:#ff9,stroke:#333,stroke-width:2px
+    style L fill:#f99,stroke:#333,stroke-width:2px
+    style M fill:#9f9,stroke:#333,stroke-width:2px
+

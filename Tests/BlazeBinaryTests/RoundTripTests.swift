@@ -7,6 +7,11 @@ struct PingRequest: BlazeBinaryCodable {
     var id: UUID
     var message: String
     
+    init(id: UUID, message: String) {
+        self.id = id
+        self.message = message
+    }
+    
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(id.uuidString)
         encoder.encode(message)
@@ -26,6 +31,11 @@ struct WorkStep: BlazeBinaryCodable {
     var description: String
     var completed: Bool
     
+    init(description: String, completed: Bool) {
+        self.description = description
+        self.completed = completed
+    }
+    
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(description)
         encoder.encode(completed)
@@ -41,6 +51,12 @@ struct WorkPlan: BlazeBinaryCodable {
     var id: UUID
     var goal: String
     var steps: [WorkStep]
+    
+    init(id: UUID, goal: String, steps: [WorkStep]) {
+        self.id = id
+        self.goal = goal
+        self.steps = steps
+    }
     
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(id.uuidString)
@@ -206,6 +222,11 @@ struct WorkPlan: BlazeBinaryCodable {
     struct TestStruct: BlazeBinaryCodable {
         var value: Int
         var text: String
+        
+        init(value: Int, text: String) {
+            self.value = value
+            self.text = text
+        }
         
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             encoder.encode(value)

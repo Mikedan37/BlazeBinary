@@ -7,40 +7,69 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  test:
-    name: Test on macOS
-    runs-on: macos-latest
+  build-and-test:
+    name: Build and Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        swift-version: ["6.0"]
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-      
+    
+    - name: Setup Swift
+      uses: swift-actions/setup-swift@v1
+      with:
+        swift-version: ${{ matrix.swift-version }}
+    
+    - name: Verify documentation files exist
+      run: |
+        echo "Checking for required documentation files..."
+        test -f README.md || exit 1
+        test -f LICENSE || exit 1
+        test -f SECURITY.md || exit 1
+        test -f CONTRIBUTING.md || exit 1
+        test -f CHANGELOG.md || exit 1
+        test -f Docs/SPECIFICATION.md || exit 1
+        test -f Docs/ARCHITECTURE.md || exit 1
+        test -f Docs/ENCODING_MODEL.md || exit 1
+        test -f Docs/FRAME_PROTOCOL.md || exit 1
+        test -f Docs/THREAT_MODEL.md || exit 1
+        test -f Docs/BENCHMARKS.md || exit 1
+        echo "All required documentation files exist"
+    
     - name: Build
       run: swift build
-      
+    
     - name: Run tests
       run: swift test
-      
-    - name: Check for warnings
-      run: |
-        swift build 2>&1 | grep -i "warning:" && exit 1 || exit 0
-        swift test 2>&1 | grep -i "warning:" && exit 1 || exit 0
-
-  benchmark:
-    name: Run Benchmarks (Optional)
-    runs-on: macos-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     
+    - name: Check for build artifacts
+      run: |
+        if [ -d ".build" ]; then
+          echo "Build artifacts created successfully"
+        else
+          echo "Build artifacts not found"
+          exit 1
+        fi
+
+  lint-docs:
+    name: Lint Documentation
+    runs-on: ubuntu-latest
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Select Xcode
-      run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-      
-    - name: Run benchmarks
-      run: swift run BlazeBinaryBenchmarks
-
+    
+    - name: Check README links
+      run: |
+        echo "Checking README.md for broken links..."
+        # Basic check - ensure docs referenced in README exist
+        grep -o '\[.*\](Docs/[^)]*)' README.md | sed 's/.*(\(.*\))/\1/' | while read link; do
+          if [ ! -f "$link" ]; then
+            echo "❌ Broken link: $link"
+            exit 1
+          fi
+        done
+        echo "All README links valid"

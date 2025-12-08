@@ -157,17 +157,17 @@ This document summarizes the documentation improvements and test enhancements ma
 ## Test Coverage Summary
 
 ### Coverage Areas
-- ✅ Round-trip tests for all primitives
-- ✅ Round-trip tests for composite types
-- ✅ Determinism tests (100 iterations)
-- ✅ Invalid varint tests
-- ✅ Corrupted frame tests
-- ✅ Truncated data tests
-- ✅ Incremental framing tests
-- ✅ Size boundary tests (exactly at limits, one over, one under)
-- ✅ Varint boundary tests (max shift, overflow protection)
-- ✅ Frame parser state consistency tests
-- ✅ Conformance tests (all invariants)
+-  Round-trip tests for all primitives
+-  Round-trip tests for composite types
+-  Determinism tests (100 iterations)
+-  Invalid varint tests
+-  Corrupted frame tests
+-  Truncated data tests
+-  Incremental framing tests
+-  Size boundary tests (exactly at limits, one over, one under)
+-  Varint boundary tests (max shift, overflow protection)
+-  Frame parser state consistency tests
+-  Conformance tests (all invariants)
 
 ### Test Organization
 - Tests organized by category (Varint, Frame, RoundTrip, etc.)
@@ -178,23 +178,23 @@ This document summarizes the documentation improvements and test enhancements ma
 ## Verification
 
 ### Code-Doc Alignment
-- ✅ All size limits match code constants
-- ✅ All error types match BlazeBinaryError cases
-- ✅ All API methods match actual signatures
-- ✅ All state machine descriptions match implementation
-- ✅ All encoding formats match actual behavior
+-  All size limits match code constants
+-  All error types match BlazeBinaryError cases
+-  All API methods match actual signatures
+-  All state machine descriptions match implementation
+-  All encoding formats match actual behavior
 
 ### Doc-Doc Alignment
-- ✅ All docs use consistent terminology
-- ✅ All docs cross-reference appropriately
-- ✅ No contradictory information
-- ✅ All examples are consistent
+-  All docs use consistent terminology
+-  All docs cross-reference appropriately
+-  No contradictory information
+-  All examples are consistent
 
 ### Test-Doc Alignment
-- ✅ Tests verify all documented behavior
-- ✅ Tests cover all documented edge cases
-- ✅ Tests match documented error cases
-- ✅ Tests verify documented invariants
+-  Tests verify all documented behavior
+-  Tests cover all documented edge cases
+-  Tests match documented error cases
+-  Tests verify documented invariants
 
 ## Summary
 

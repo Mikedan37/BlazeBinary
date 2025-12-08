@@ -1,3 +1,11 @@
+//
+// BlazeBinaryFrame.swift
+// BlazeBinary
+//
+// Copyright (c) 2025 Michael Danylchuk
+// MIT License
+//
+
 import Foundation
 
 /// Frame encoder for IPC/socket communication.
@@ -29,8 +37,8 @@ public class BlazeFrameParser {
     /// Maximum allowed buffer size (10 MB)
     public static let maxBufferSize = 10 * 1024 * 1024
     
-    private var buffer: Data
-    private let maxFrameSize: Int
+    @usableFromInline internal var buffer: Data
+    @usableFromInline internal let maxFrameSize: Int
     
     /// Creates a new frame parser.
     /// - Parameter maxFrameSize: Maximum allowed frame size (default: 5 MB)
@@ -77,8 +85,15 @@ public class BlazeFrameParser {
         }
         
         // Read length prefix (big-endian UInt32)
-        let length = buffer.withUnsafeBytes { bytes in
-            UInt32(bigEndian: bytes.load(as: UInt32.self))
+        // Use manual byte reading to avoid alignment issues
+        let lengthBytes = buffer.prefix(4)
+        let length = lengthBytes.withUnsafeBytes { bytes in
+            var value: UInt32 = 0
+            value |= UInt32(bytes[0]) << 24
+            value |= UInt32(bytes[1]) << 16
+            value |= UInt32(bytes[2]) << 8
+            value |= UInt32(bytes[3])
+            return value
         }
         
         let lengthInt = Int(length)

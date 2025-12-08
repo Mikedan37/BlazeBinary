@@ -1,0 +1,14 @@
+stateDiagram-v2
+    [*] --> HandshakeInit
+    HandshakeInit --> HandshakeAck: Send 0x01 handshake
+    HandshakeAck --> Verify: Send 0x02 handshakeAck
+    Verify --> Complete: Send 0x03 verify
+    Complete --> DataTransfer: Send 0x04 handshakeComplete
+    DataTransfer --> DataTransfer: Send 0x06 operation
+    DataTransfer --> DataTransfer: Send 0x05 encryptedData
+    HandshakeInit --> [*]: Error/Timeout
+    HandshakeAck --> [*]: Error/Timeout
+    Verify --> [*]: Error/Timeout
+    Complete --> [*]: Error/Timeout
+    DataTransfer --> [*]: Close/Error
+

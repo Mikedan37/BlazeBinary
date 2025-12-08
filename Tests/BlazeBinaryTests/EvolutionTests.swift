@@ -7,6 +7,11 @@ struct PersonV1: BlazeBinaryCodable {
     var name: String
     var age: Int
     
+    init(name: String, age: Int) {
+        self.name = name
+        self.age = age
+    }
+    
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(name)
         encoder.encode(age)
@@ -24,17 +29,30 @@ struct PersonV2: BlazeBinaryCodable {
     var age: Int
     var email: String? // New optional field
     
+    init(name: String, age: Int, email: String? = nil) {
+        self.name = name
+        self.age = age
+        self.email = email
+    }
+    
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(name)
         encoder.encode(age)
-        try encoder.encode(email) // Optional field
+        if let email = email {
+            encoder.encode(email)
+        }
     }
     
     init(from decoder: BlazeBinaryDecoder) throws {
         self.name = try decoder.decodeString()
         self.age = try decoder.decodeInt()
         // Try to decode optional field, use nil if not present
-        self.email = try? decoder.decodeOptional(String.self)
+        // Check if there's remaining data for the optional field
+        if !decoder.remainingData.isEmpty {
+            self.email = try? decoder.decodeString()
+        } else {
+            self.email = nil
+        }
     }
 }
 
@@ -42,6 +60,10 @@ struct PersonV2: BlazeBinaryCodable {
 struct PersonV3: BlazeBinaryCodable {
     var name: String
     // age field removed
+    
+    init(name: String) {
+        self.name = name
+    }
     
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(name)
@@ -88,36 +110,70 @@ struct PersonV3: BlazeBinaryCodable {
 }
 
 @Test func testDecodeIfPresent() throws {
+    // Test with a type that conforms to BlazeBinaryCodable
+    struct TestStruct: BlazeBinaryCodable {
+        var value: Int
+        
+        init(value: Int) {
+            self.value = value
+        }
+        
+        func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+            encoder.encode(value)
+        }
+        
+        init(from decoder: BlazeBinaryDecoder) throws {
+            self.value = try decoder.decodeInt()
+        }
+    }
+    
     let encoder = BlazeBinaryEncoder()
-    encoder.encode("Hello")
+    try encoder.encode(TestStruct(value: 42))
     let data = encoder.encodedData()
     
     let decoder = BlazeBinaryDecoder(data: data)
-    let present = try decoder.decodeIfPresent(String.self)
-    #expect(present == "Hello")
+    let present = try decoder.decodeIfPresent(TestStruct.self)
+    #expect(present?.value == 42)
     
     // Try to decode when data is exhausted
-    let absent = try decoder.decodeIfPresent(String.self)
+    let absent = try decoder.decodeIfPresent(TestStruct.self)
     #expect(absent == nil)
 }
 
 @Test func testDecodeOptional() throws {
+    // Test with a type that conforms to BlazeBinaryCodable
+    struct TestStruct: BlazeBinaryCodable {
+        var value: Int
+        
+        init(value: Int) {
+            self.value = value
+        }
+        
+        func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+            encoder.encode(value)
+        }
+        
+        init(from decoder: BlazeBinaryDecoder) throws {
+            self.value = try decoder.decodeInt()
+        }
+    }
+    
     // Test with present value
     let encoder = BlazeBinaryEncoder()
-    try encoder.encode("World" as String?)
+    try encoder.encode(TestStruct(value: 100) as TestStruct?)
     let dataPresent = encoder.encodedData()
     
     let decoderPresent = BlazeBinaryDecoder(data: dataPresent)
-    let decodedPresent = try decoderPresent.decodeOptional(String.self)
-    #expect(decodedPresent == "World")
+    let decodedPresent = try decoderPresent.decodeOptional(TestStruct.self)
+    #expect(decodedPresent?.value == 100)
     
     // Test with nil value
     let encoderNil = BlazeBinaryEncoder()
-    try encoderNil.encode(nil as String?)
+    try encoderNil.encode(nil as TestStruct?)
     let dataNil = encoderNil.encodedData()
     
     let decoderNil = BlazeBinaryDecoder(data: dataNil)
-    let decodedNil = try decoderNil.decodeOptional(String.self)
+    let decodedNil = try decoderNil.decodeOptional(TestStruct.self)
     #expect(decodedNil == nil)
 }
 

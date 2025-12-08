@@ -9,6 +9,12 @@ import Foundation
         var count: Int
         var name: String
         
+        init(id: UUID, count: Int, name: String) {
+            self.id = id
+            self.count = count
+            self.name = name
+        }
+        
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             encoder.encode(id.uuidString)
             encoder.encode(count)
@@ -49,6 +55,10 @@ import Foundation
 @Test func testStressArrays() throws {
     struct Item: BlazeBinaryCodable {
         var value: Int
+        
+        init(value: Int) {
+            self.value = value
+        }
         
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             encoder.encode(value)

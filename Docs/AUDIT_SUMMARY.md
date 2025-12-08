@@ -11,28 +11,28 @@ This document provides a high-level summary of audit results and verification st
 
 ## Audit Results
 
-### ✅ Memory Safety
+###  Memory Safety
 - **Status**: PASS
 - **Findings**: All memory operations use Swift's safe APIs
 - **Unsafe Operations**: Only `withUnsafeBytes` used (Swift's safe API for byte access)
 - **Bounds Checking**: All decode operations perform strict bounds checking
 - **Allocation Limits**: Hard limits enforced (5MB frame, 10MB buffer, 10MB variable-length fields)
 
-### ✅ Deterministic Encoding
+###  Deterministic Encoding
 - **Status**: PASS
 - **Findings**: Encoding is fully deterministic
 - **Verification**: Tests confirm same input → same output (100 iterations)
 - **No External State**: Encoder output depends only on input values
 - **Fixed Field Order**: Fields encoded in exact order specified
 
-### ✅ Strict Error Handling
+###  Strict Error Handling
 - **Status**: PASS
 - **Findings**: All errors are `BlazeBinaryError` enum cases
 - **No Generic Errors**: No generic Swift errors thrown
 - **Fail-Fast**: Errors thrown immediately, no partial state
 - **Error Coverage**: All error cases documented and tested
 
-### ✅ Protocol Compliance
+###  Protocol Compliance
 - **Status**: PASS
 - **LEB128 Varint**: Correctly implemented with 10-byte limit and shift overflow protection
 - **ZigZag Encoding**: Mathematically correct, fully reversible
@@ -40,14 +40,14 @@ This document provides a high-level summary of audit results and verification st
 - **Little-Endian**: UInt32/UInt64 use little-endian encoding
 - **Big-Endian Frame Length**: Frame length prefix uses big-endian as specified
 
-### ✅ Size Limits
+###  Size Limits
 - **Status**: PASS
 - **Max Frame Size**: 5MB enforced in `BlazeFrameEncoder.encodeFrame()`
 - **Max Buffer Size**: 10MB enforced in `BlazeFrameParser.append()`
 - **Max Variable Length**: 10MB enforced in decoder (configurable)
 - **Validation**: All limits checked before processing
 
-### ✅ Incremental Frame Parsing
+###  Incremental Frame Parsing
 - **Status**: PASS
 - **Partial Frames**: Handled correctly (returns nil, not error)
 - **State Machine**: Correctly implements 3-state machine
@@ -173,15 +173,15 @@ Added comprehensive test files:
 - Existing test files (EncoderTests, DecoderTests, FrameTests, etc.)
 
 ### Test Categories
-- ✅ Round-trip tests for all types
-- ✅ Determinism tests (100 iterations)
-- ✅ Invalid varint tests
-- ✅ Corrupted frame tests
-- ✅ Truncated data tests
-- ✅ Malformed input tests
-- ✅ Incremental framing tests
-- ✅ Size boundary tests
-- ✅ Conformance tests
+-  Round-trip tests for all types
+-  Determinism tests (100 iterations)
+-  Invalid varint tests
+-  Corrupted frame tests
+-  Truncated data tests
+-  Malformed input tests
+-  Incremental framing tests
+-  Size boundary tests
+-  Conformance tests
 
 ## Public API Stability
 
@@ -209,12 +209,12 @@ All methods maintain their signatures. Only documentation was enhanced.
 
 BlazeBinary has been fully audited and improved:
 
-1. ✅ All safety requirements met
-2. ✅ All protocol requirements met
-3. ✅ Comprehensive test coverage added
-4. ✅ Documentation enhanced
-5. ✅ Code quality improved
-6. ✅ Public API remains stable
+1.  All safety requirements met
+2.  All protocol requirements met
+3.  Comprehensive test coverage added
+4.  Documentation enhanced
+5.  Code quality improved
+6.  Public API remains stable
 
 The package is production-ready and fully compliant with all specifications.
 

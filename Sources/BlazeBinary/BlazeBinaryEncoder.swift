@@ -1,8 +1,16 @@
+//
+// BlazeBinaryEncoder.swift
+// BlazeBinary
+//
+// Copyright (c) 2025 Michael Danylchuk
+// MIT License
+//
+
 import Foundation
 
 /// Encoder for converting Swift values to deterministic binary format.
 public class BlazeBinaryEncoder {
-    private var data: Data
+    @usableFromInline internal var data: Data
     
     /// Creates a new encoder.
     public init() {
@@ -22,14 +30,30 @@ public class BlazeBinaryEncoder {
     public func encode(_ value: Int) {
         // Zigzag encoding: maps signed integers to unsigned integers
         // -1 -> 1, 1 -> 2, -2 -> 3, 2 -> 4, etc.
-        let zigzag = UInt64(bitPattern: Int64(value << 1) ^ Int64(value >> 63))
+        // Formula: (value << 1) ^ (value >> 63)
+        // Cast to Int64 to handle full range, but need to avoid overflow on Int64.min
+        let value64 = Int64(truncatingIfNeeded: value)
+        
+        // Handle Int64.min specially (left shift would overflow)
+        let zigzag: UInt64
+        if value64 == Int64.min {
+            // Int64.min zigzag encodes to UInt64.max
+            zigzag = UInt64.max
+        } else {
+            // Standard zigzag: (value << 1) ^ (value >> 63)
+            // Do arithmetic in signed space first to get correct result
+            let shifted = value64 << 1
+            let sign = value64 >> 63
+            let result = shifted ^ sign
+            zigzag = UInt64(bitPattern: result)
+        }
         encodeVarint(zigzag)
     }
     
     /// Encodes an unsigned integer using varint (LEB128) encoding.
     /// - Parameter value: The unsigned integer to encode
     @inlinable
-    private func encodeVarint(_ value: UInt64) {
+    internal func encodeVarint(_ value: UInt64) {
         var v = value
         repeat {
             var byte = UInt8(v & 0x7F)
@@ -66,6 +90,16 @@ public class BlazeBinaryEncoder {
     @inlinable
     public func encode(_ value: Bool) {
         data.append(value ? 1 : 0)
+    }
+    
+    /// Encodes a Double in little-endian format (8 bytes).
+    /// - Parameter value: The Double to encode
+    @inlinable
+    public func encode(_ value: Double) {
+        let bitPattern = value.bitPattern
+        withUnsafeBytes(of: bitPattern.littleEndian) { bytes in
+            data.append(contentsOf: bytes)
+        }
     }
     
     // MARK: - Length-Prefixed Encoding

@@ -138,6 +138,12 @@ struct ComprehensiveRoundTripTests {
         var b: String
         var c: Bool
         
+        init(a: Int, b: String, c: Bool) {
+            self.a = a
+            self.b = b
+            self.c = c
+        }
+        
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             encoder.encode(a)
             encoder.encode(b)
@@ -169,6 +175,11 @@ struct ComprehensiveRoundTripTests {
     struct NestedStruct: BlazeBinaryCodable {
         var inner: SimpleStruct
         var value: Int
+        
+        init(inner: SimpleStruct, value: Int) {
+            self.inner = inner
+            self.value = value
+        }
         
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             try encoder.encode(inner)
@@ -202,6 +213,10 @@ struct ComprehensiveRoundTripTests {
     
     struct ArrayStruct: BlazeBinaryCodable {
         var items: [SimpleStruct]
+        
+        init(items: [SimpleStruct]) {
+            self.items = items
+        }
         
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
             try encoder.encode(items)

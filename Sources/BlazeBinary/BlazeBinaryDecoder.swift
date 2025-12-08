@@ -1,10 +1,18 @@
+//
+// BlazeBinaryDecoder.swift
+// BlazeBinary
+//
+// Copyright (c) 2025 Michael Danylchuk
+// MIT License
+//
+
 import Foundation
 
 /// Decoder for converting binary format to Swift values with strict bounds checking.
 public class BlazeBinaryDecoder {
-    private let data: Data
-    private var offset: Int
-    private let maxAllowedLength: Int
+    @usableFromInline internal let data: Data
+    @usableFromInline internal var offset: Int
+    @usableFromInline internal let maxAllowedLength: Int
     
     /// Creates a new decoder from the provided data.
     /// - Parameters:
@@ -27,7 +35,7 @@ public class BlazeBinaryDecoder {
     /// Ensures there are at least `count` bytes remaining.
     /// - Parameter count: The number of bytes required
     /// - Throws: `BlazeBinaryError.truncated` if insufficient data
-    private func ensureBytes(_ count: Int) throws {
+    @usableFromInline internal func ensureBytes(_ count: Int) throws {
         guard offset + count <= data.count else {
             throw BlazeBinaryError.truncated
         }
@@ -39,7 +47,7 @@ public class BlazeBinaryDecoder {
     /// - Returns: The decoded unsigned integer
     /// - Throws: `BlazeBinaryError.truncated` or `BlazeBinaryError.invalidVarint`
     @inlinable
-    private func decodeVarint() throws -> UInt64 {
+    internal func decodeVarint() throws -> UInt64 {
         var result: UInt64 = 0
         var shift: UInt64 = 0
         var bytesRead = 0
@@ -73,8 +81,24 @@ public class BlazeBinaryDecoder {
     public func decodeInt() throws -> Int {
         let zigzag = try decodeVarint()
         // Reverse zigzag encoding
-        let value = Int64(truncatingIfNeeded: zigzag)
-        return Int((value >> 1) ^ (-(value & 1)))
+        // If zigzag is odd: value = -(zigzag + 1) / 2
+        // If zigzag is even: value = zigzag / 2
+        // Handle UInt64.max specially (decodes to Int64.min)
+        let value64: Int64
+        if zigzag == UInt64.max {
+            value64 = Int64.min
+        } else {
+            if (zigzag & 1) == 1 {
+                // Odd: negative value
+                // -(zigzag + 1) / 2 = -((zigzag + 1) >> 1)
+                value64 = -Int64(truncatingIfNeeded: (zigzag + 1) >> 1)
+            } else {
+                // Even: positive value
+                // zigzag / 2 = zigzag >> 1
+                value64 = Int64(truncatingIfNeeded: zigzag >> 1)
+            }
+        }
+        return Int(truncatingIfNeeded: value64)
     }
     
     // MARK: - Fixed-Width Little-Endian Decoding
@@ -85,12 +109,14 @@ public class BlazeBinaryDecoder {
     @inlinable
     public func decodeUInt32() throws -> UInt32 {
         try ensureBytes(4)
-        let slice = data.subdata(in: offset..<(offset + 4))
-        let value = slice.withUnsafeBytes { bytes in
-            bytes.load(as: UInt32.self)
-        }
+        // Read bytes manually to avoid alignment issues
+        var value: UInt32 = 0
+        value |= UInt32(data[offset])
+        value |= UInt32(data[offset + 1]) << 8
+        value |= UInt32(data[offset + 2]) << 16
+        value |= UInt32(data[offset + 3]) << 24
         offset += 4
-        return UInt32(littleEndian: value)
+        return value // Already little-endian
     }
     
     /// Decodes a UInt64 in little-endian format.
@@ -99,12 +125,18 @@ public class BlazeBinaryDecoder {
     @inlinable
     public func decodeUInt64() throws -> UInt64 {
         try ensureBytes(8)
-        let slice = data.subdata(in: offset..<(offset + 8))
-        let value = slice.withUnsafeBytes { bytes in
-            bytes.load(as: UInt64.self)
-        }
+        // Read bytes manually to avoid alignment issues
+        var value: UInt64 = 0
+        value |= UInt64(data[offset])
+        value |= UInt64(data[offset + 1]) << 8
+        value |= UInt64(data[offset + 2]) << 16
+        value |= UInt64(data[offset + 3]) << 24
+        value |= UInt64(data[offset + 4]) << 32
+        value |= UInt64(data[offset + 5]) << 40
+        value |= UInt64(data[offset + 6]) << 48
+        value |= UInt64(data[offset + 7]) << 56
         offset += 8
-        return UInt64(littleEndian: value)
+        return value // Already little-endian
     }
     
     /// Decodes a Bool from a single byte (0x00 for false, 0x01 for true).
@@ -124,6 +156,26 @@ public class BlazeBinaryDecoder {
         default:
             throw BlazeBinaryError.decodeFailed("Invalid bool value: \(byte)")
         }
+    }
+    
+    /// Decodes a Double in little-endian format (8 bytes).
+    /// - Returns: The decoded Double
+    /// - Throws: `BlazeBinaryError.truncated`
+    @inlinable
+    public func decodeDouble() throws -> Double {
+        try ensureBytes(8)
+        // Read bytes manually to avoid alignment issues
+        var bitPattern: UInt64 = 0
+        bitPattern |= UInt64(data[offset])
+        bitPattern |= UInt64(data[offset + 1]) << 8
+        bitPattern |= UInt64(data[offset + 2]) << 16
+        bitPattern |= UInt64(data[offset + 3]) << 24
+        bitPattern |= UInt64(data[offset + 4]) << 32
+        bitPattern |= UInt64(data[offset + 5]) << 40
+        bitPattern |= UInt64(data[offset + 6]) << 48
+        bitPattern |= UInt64(data[offset + 7]) << 56
+        offset += 8
+        return Double(bitPattern: bitPattern) // Already little-endian
     }
     
     // MARK: - Length-Prefixed Decoding
@@ -243,27 +295,53 @@ public class BlazeBinaryDecoder {
         
         // Check if it's a bool (0x00 or 0x01) - most specific check first
         if firstByte == 0x00 || firstByte == 0x01 {
+            // Check if there are more bytes - if so, might be part of fixed-width
+            if offset + 1 < data.count {
+                let secondByte = data[offset + 1]
+                // If next bytes are all zeros, might be fixed-width UInt32/UInt64
+                // But for simplicity, treat 0x00/0x01 as bool if followed by non-zero or end
+                if secondByte == 0x00 && offset + 4 <= data.count {
+                    // Could be UInt32(0) or UInt64(0) - check if all 4/8 bytes are zero
+                    var allZero = true
+                    for i in offset..<min(offset + 4, data.count) {
+                        if data[i] != 0x00 {
+                            allZero = false
+                            break
+                        }
+                    }
+                    if allZero && offset + 4 <= data.count {
+                        offset += 4
+                        return
+                    }
+                }
+            }
             offset += 1
             return
         }
         
-        // Check if it's a varint (has continuation bit set or value < 128)
-        if (firstByte & 0x80) != 0 || firstByte < 0x80 {
-            // Decode varint to skip it
-            // Note: For length-prefixed fields (String/Data), the caller should
-            // use decodeData() or decodeString() and discard the result
+        // Check if it's a varint with continuation bit set (definitely a varint)
+        if (firstByte & 0x80) != 0 {
             _ = try decodeVarint()
             return
         }
         
-        // Check if it's a fixed-width integer (UInt32 = 4 bytes, UInt64 = 8 bytes)
-        // We'll try UInt32 first (most common)
+        // For bytes < 128 without continuation bit, it could be:
+        // 1. A single-byte varint (value < 128)
+        // 2. First byte of a fixed-width UInt32/UInt64
+        // We can't reliably distinguish, so we use a heuristic:
+        // If the next 3 bytes are all zeros and we have 4 bytes, it's likely UInt32
         if offset + 4 <= data.count {
-            offset += 4
-            return
+            let secondByte = data[offset + 1]
+            let thirdByte = data[offset + 2]
+            let fourthByte = data[offset + 3]
+            // If bytes 2-4 are zeros, likely a fixed-width UInt32
+            if secondByte == 0x00 && thirdByte == 0x00 && fourthByte == 0x00 {
+                offset += 4
+                return
+            }
         }
         
-        // If we can't determine, try varint as fallback
+        // Otherwise, treat as varint (single byte for values < 128)
         _ = try decodeVarint()
     }
     

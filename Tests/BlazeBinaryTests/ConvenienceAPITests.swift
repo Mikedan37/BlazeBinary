@@ -5,6 +5,10 @@ import Foundation
 struct TestItem: BlazeBinaryCodable {
     var value: Int
     
+    init(value: Int) {
+        self.value = value
+    }
+    
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
         encoder.encode(value)
     }
@@ -15,22 +19,24 @@ struct TestItem: BlazeBinaryCodable {
 }
 
 @Test func testEncodeOptionalPresent() throws {
+    // Test with a type that conforms to BlazeBinaryDecodable
     let encoder = BlazeBinaryEncoder()
-    try encoder.encode("Hello" as String?)
+    try encoder.encode(TestItem(value: 42) as TestItem?)
     let data = encoder.encodedData()
     
     let decoder = BlazeBinaryDecoder(data: data)
-    let decoded = try decoder.decodeOptional(String.self)
-    #expect(decoded == "Hello")
+    let decoded = try decoder.decodeOptional(TestItem.self)
+    #expect(decoded?.value == 42)
 }
 
 @Test func testEncodeOptionalNil() throws {
+    // Test with a type that conforms to BlazeBinaryDecodable
     let encoder = BlazeBinaryEncoder()
-    try encoder.encode(nil as String?)
+    try encoder.encode(nil as TestItem?)
     let data = encoder.encodedData()
     
     let decoder = BlazeBinaryDecoder(data: data)
-    let decoded = try decoder.decodeOptional(String.self)
+    let decoded = try decoder.decodeOptional(TestItem.self)
     #expect(decoded == nil)
 }
 
@@ -71,8 +77,12 @@ struct TestItem: BlazeBinaryCodable {
     struct NestedItem: BlazeBinaryCodable {
         var items: [Int]
         
+        init(items: [Int]) {
+            self.items = items
+        }
+        
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
-            try encoder.encodeCollection(items.map { TestItem(value: $0) })
+            try encoder.encode(items.map { TestItem(value: $0) })
         }
         
         init(from decoder: BlazeBinaryDecoder) throws {
