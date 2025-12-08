@@ -620,30 +620,26 @@ graph LR
 
 ## Usage Guide
 
-### Basic Encoding
+### Basic Encoding & Decoding
+
+<details>
+<summary><b>View Example</b></summary>
 
 ```swift
 import BlazeBinary
 
+// Encoding
 let encoder = BlazeBinaryEncoder()
-
 encoder.encode(UInt32(42))
 encoder.encode(UInt64(123456789))
 encoder.encode(Int(-100))
 encoder.encode(true)
 encoder.encode("Hello, World!")
 encoder.encode(Data([0x01, 0x02, 0x03]))
-
 let data = encoder.encodedData()
-```
 
-### Basic Decoding
-
-> **Note:** Decode values in the same order as encoding.
-
-```swift
+// Decoding (same order)
 let decoder = BlazeBinaryDecoder(data: data)
-
 let uint32 = try decoder.decodeUInt32()      // 42
 let uint64 = try decoder.decodeUInt64()      // 123456789
 let int = try decoder.decodeInt()            // -100
@@ -652,9 +648,14 @@ let string = try decoder.decodeString()      // "Hello, World!"
 let data = try decoder.decodeData()          // Data([0x01, 0x02, 0x03])
 ```
 
+</details>
+
 ### Custom Types
 
 > **Important:** Field encoding order must match decoding order exactly.
+
+<details>
+<summary><b>View Implementation</b></summary>
 
 ```swift
 struct Person: BlazeBinaryCodable {
@@ -683,6 +684,8 @@ struct Person: BlazeBinaryCodable {
 }
 ```
 
+</details>
+
 **Usage:**
 
 ```swift
@@ -696,6 +699,9 @@ let decoded = try decoder.decode(Person.self)
 ```
 
 ### Arrays
+
+<details>
+<summary><b>View Example</b></summary>
 
 ```swift
 struct WorkStep: BlazeBinaryCodable {
@@ -726,20 +732,22 @@ struct WorkPlan: BlazeBinaryCodable {
 }
 ```
 
-### Frame Encoding (IPC/Sockets)
+</details>
 
-For network protocols, wrap payloads in frames:
+### Frame Encoding & Parsing
+
+<details>
+<summary><b>View Frame Examples</b></summary>
+
+**Encoding:**
 
 ```swift
 let payload = Data([0x01, 0x02, 0x03, 0x04])
 let frame = try BlazeFrameEncoder.encodeFrame(payload)
+// Frame: [4-byte length prefix (big-endian)] + [payload]
 ```
 
-> Frame format: `[4-byte length prefix (big-endian)] + [payload]`
-
-### Frame Parsing (Streaming)
-
-Incremental parsing for network streams:
+**Streaming Parsing:**
 
 ```swift
 let parser = BlazeFrameParser()
@@ -755,9 +763,14 @@ while let payload = try parser.nextFrame() {
 
 > **Note:** `nextFrame()` returns `nil` when more data is needed.
 
+</details>
+
 ### Complete Example: Network Protocol
 
-**Server side (encoding):**
+<details>
+<summary><b>View Full Example</b></summary>
+
+**Message Type:**
 
 ```swift
 struct Message: BlazeBinaryCodable {
@@ -778,7 +791,11 @@ struct Message: BlazeBinaryCodable {
         self.content = try decoder.decodeString()
     }
 }
+```
 
+**Server (Encoding):**
+
+```swift
 let message = Message(id: UUID(), content: "Hello!")
 let encoder = BlazeBinaryEncoder()
 try encoder.encode(message)
@@ -787,7 +804,7 @@ let frame = try BlazeFrameEncoder.encodeFrame(payload)
 sendToClient(frame)
 ```
 
-**Client side (decoding):**
+**Client (Decoding):**
 
 ```swift
 let parser = BlazeFrameParser()
@@ -801,6 +818,8 @@ if let payload = try parser.nextFrame() {
     print("Received: \(message.content)")
 }
 ```
+
+</details>
 
 ---
 
@@ -872,20 +891,19 @@ Error cases:
 
 ## Safety & Validation
 
-### Bounds Checking
+<details>
+<summary><b>View Safety Examples</b></summary>
 
-All decoding operations perform strict bounds checking:
+**Bounds Checking:**
 
 ```swift
 let decoder = BlazeBinaryDecoder(data: Data([0x01, 0x02]))
 let value = try decoder.decodeUInt32()  // Throws: BlazeBinaryError.truncated
 ```
 
-> **Error:** Needs 4 bytes, only 2 available.
+> Needs 4 bytes, only 2 available.
 
-### Length Validation
-
-Variable-length fields are validated against `maxAllowedLength`:
+**Length Validation:**
 
 ```swift
 let decoder = BlazeBinaryDecoder(data: hugeData, maxAllowedLength: 1024)
@@ -894,17 +912,16 @@ let data = try decoder.decodeData()  // Throws if length > 1024
 
 > Default max: 10 MB
 
-### Frame Size Limits
-
-- **Max Frame Size**: 5 MB (prevents memory exhaustion)
-- **Max Buffer Size**: 10 MB (prevents buffer overflow attacks)
+**Frame Size Limits:**
 
 ```swift
 let hugePayload = Data(repeating: 0, count: 6 * 1024 * 1024)
 let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // Throws: oversizedFrame
 ```
 
-> **Limit:** 6 MB exceeds 5 MB maximum frame size.
+> Max frame: 5 MB | Max buffer: 10 MB
+
+</details>
 
 ### Invalid Data Rejection
 
