@@ -8,6 +8,7 @@
 
 import XCTest
 import Foundation
+import Crypto
 @testable import BlazeBinary
 
 /// Comprehensive encrypted frame flow tests.
@@ -93,10 +94,15 @@ final class EncryptedFrameFlowTests: XCTestCase {
         var session = try createTestSession()
         
         // Create incompressible payload (random data)
-        var payload = Data(count: 1000)
-        payload.withUnsafeMutableBytes { bytes in
-            arc4random_buf(bytes.baseAddress, 1000)
+        let randomKey = SymmetricKey(size: .bits256)
+        var payload = randomKey.withUnsafeBytes { Data($0) }
+        // Generate more bytes if needed (1000 bytes)
+        while payload.count < 1000 {
+            let moreKey = SymmetricKey(size: .bits256)
+            let moreData = moreKey.withUnsafeBytes { Data($0) }
+            payload.append(moreData)
         }
+        payload = payload.prefix(1000)
         
         // Encrypt without compression
         let encrypted = try session.makeEncryptedFrame(from: payload)

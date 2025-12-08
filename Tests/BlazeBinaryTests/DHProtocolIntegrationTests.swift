@@ -177,10 +177,8 @@ final class DHProtocolIntegrationTests: XCTestCase {
         var handshake = BlazeSecureHandshake(role: .server)
         
         // Generate random garbage
-        var randomKey = Data(count: 32)
-        randomKey.withUnsafeMutableBytes { bytes in
-            arc4random_buf(bytes.baseAddress, 32)
-        }
+        let randomKeyData = SymmetricKey(size: .bits256)
+        let randomKey = randomKeyData.withUnsafeBytes { Data($0) }
         
         let randomKeyMessage = makeHandshakeMessage(type: 0x01, publicKey: randomKey)
         
