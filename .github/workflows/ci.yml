@@ -13,9 +13,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: macos-latest
+          - os: macos-14
             swift-version: "5.10"
-            xcode-version: "15.4"
           - os: ubuntu-22.04
             swift-version: "5.10"
     
