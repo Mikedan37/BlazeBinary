@@ -115,6 +115,320 @@ BlazeBinary solves real problems in production systems:
 
 ---
 
+## Security & Safety: What BlazeBinary Provides
+
+**BlazeBinary is secure for memory safety and deterministic encoding, but does NOT provide transport security.**
+
+### What BlazeBinary IS Secure For
+
+**Memory Safety**
+- **No buffer overflows**: All reads are bounds-checked before execution
+- **No use-after-free**: Swift's memory model prevents memory safety issues
+- **Strict validation**: Malformed data is rejected with clear errors, never crashes
+- **Size limits**: Hard limits prevent memory exhaustion (5MB frames, 10MB buffers)
+
+**Deterministic Encoding**
+- **Cryptographic hashing**: Same input → same bytes enables reliable SHA256/MD5 hashing
+- **Content addressing**: Deterministic encoding enables content-addressable storage systems
+- **Digital signatures**: Deterministic encoding enables message authentication codes (MACs)
+
+**Input Validation**
+- **Bounds checking**: All variable-length fields validated before allocation
+- **Type validation**: Invalid encodings rejected (invalid varints, invalid UTF-8, invalid bools)
+- **Fail-fast errors**: All errors thrown immediately, no partial state returned
+
+### What BlazeBinary is NOT Secure For
+
+**Transport Security** (Use TLS/AES-GCM)
+- **No encryption**: BlazeBinary does not encrypt data. Use TLS or AES-GCM for confidentiality
+- **No authentication**: BlazeBinary does not verify message authenticity. Use HMAC or authenticated encryption
+- **No replay protection**: BlazeBinary does not prevent replay attacks. Implement sequence numbers at application layer
+
+**Cryptographic Integrity** (Use HMAC/AES-GCM)
+- **CRC32 is not cryptographic**: CRC32 detects accidental corruption but is NOT secure against malicious tampering
+- **No message authentication**: Use HMAC-SHA256 or AES-GCM for cryptographic integrity
+
+**Side-Channel Resistance**
+- **Not hardened**: BlazeBinary is not specifically hardened against timing or power analysis attacks
+
+### Security Best Practices
+
+1. **Always use TLS** when transmitting BlazeBinary data over untrusted networks
+2. **Set appropriate limits**: Configure `maxAllowedLength` based on your use case (default: 10MB)
+3. **Validate decoded data**: Don't trust decoded values without application-level validation
+4. **Use authenticated encryption**: When confidentiality and integrity are required, use AES-GCM or TLS
+5. **Monitor resource usage**: Watch for memory and CPU exhaustion from large payloads
+
+**For complete security details, see [THREAT_MODEL.md](Docs/THREAT_MODEL.md) and [SECURITY.md](SECURITY.md).**
+
+---
+
+## What BlazeBinary Enables
+
+BlazeBinary's deterministic encoding and high performance enable powerful use cases:
+
+### 1. Content-Addressed Storage (CAS)
+
+**Problem**: Need to deduplicate data and use hashes as identifiers, but JSON's non-determinism breaks hashing.
+
+**Solution**: BlazeBinary's deterministic encoding enables reliable content addressing.
+
+```swift
+// Same data always produces same hash
+let data = ["id": "abc123", "count": 42]
+let encoder = BlazeBinaryEncoder()
+try encoder.encode(data)
+let hash = encoder.encodedData().sha256  // Always the same hash
+
+// Use hash as content identifier
+storage.store(hash: hash, data: encoder.encodedData())
+```
+
+**Benefits**:
+- 100% deduplication accuracy (vs ~0% with JSON)
+- Reliable content addressing (hash = identifier)
+- Enables Git-like version control for binary data
+
+### 2. High-Performance Microservices
+
+**Problem**: JSON parsing overhead limits API throughput (800K ops/sec vs 4.1M ops/sec).
+
+**Solution**: BlazeBinary's binary format reduces payload size by 85% and increases throughput by 5.1x.
+
+**Real Impact**:
+- **80.6% CPU reduction**: Handle 1M req/sec with 0.24 cores instead of 1.25 cores
+- **85% bandwidth savings**: 18 bytes vs 120 bytes for typical messages
+- **5.1x more capacity**: Same hardware handles 5.1x more requests
+
+### 3. Cryptographic Signatures & MACs
+
+**Problem**: Need to sign messages, but non-deterministic encoding breaks signature verification.
+
+**Solution**: BlazeBinary's deterministic encoding enables reliable cryptographic signatures.
+
+```swift
+// Encode message deterministically
+let message = Message(id: uuid, text: "Hello", count: 42)
+let encoder = BlazeBinaryEncoder()
+try encoder.encode(message)
+let encoded = encoder.encodedData()
+
+// Sign the deterministic bytes
+let signature = HMAC.SHA256(key: secretKey, data: encoded)
+
+// Verify: same message → same bytes → same signature
+let encoder2 = BlazeBinaryEncoder()
+try encoder2.encode(message)
+assert(encoder2.encodedData() == encoded)  // Always true
+assert(HMAC.SHA256(key: secretKey, data: encoded) == signature)  // Always true
+```
+
+**Benefits**:
+- Reliable message authentication codes (MACs)
+- Deterministic signatures enable signature verification
+- Enables secure messaging protocols
+
+### 4. Local-First Applications
+
+**Problem**: Need to store millions of records efficiently without JSON overhead.
+
+**Solution**: BlazeBinary's compact format and zero-copy decoding enable efficient local storage.
+
+**Real Impact**:
+- **85% storage savings**: 18 bytes vs 120 bytes per record
+- **Zero-copy decoding**: Minimal memory overhead for large datasets
+- **Fast queries**: Binary format enables efficient indexing and searching
+
+### 5. Network Protocols & Streaming
+
+**Problem**: Need frame-based encoding for streaming protocols with incremental parsing.
+
+**Solution**: BlazeBinary's frame format enables efficient streaming with partial frame handling.
+
+```swift
+// Stream frames over network
+let parser = BlazeFrameParser()
+for chunk in networkStream {
+    try parser.append(chunk)
+    while let frame = try parser.nextFrame() {
+        // Process complete frame
+        let decoder = BlazeBinaryDecoder(data: frame)
+        let message = try decoder.decode(Message.self)
+        handleMessage(message)
+    }
+}
+```
+
+**Benefits**:
+- Handles partial frames gracefully (never blocks)
+- Efficient streaming (no need to buffer entire messages)
+- Perfect for real-time systems and IPC
+
+### 6. Testing & Debugging
+
+**Problem**: Non-deterministic encoding makes test comparisons unreliable.
+
+**Solution**: BlazeBinary's deterministic encoding enables reliable test comparisons.
+
+```swift
+// Same input always produces same output
+let encoder1 = BlazeBinaryEncoder()
+try encoder1.encode(testData)
+let output1 = encoder1.encodedData()
+
+let encoder2 = BlazeBinaryEncoder()
+try encoder2.encode(testData)
+let output2 = encoder2.encodedData()
+
+assert(output1 == output2)  // Always true - enables reliable testing
+```
+
+**Benefits**:
+- Reliable test comparisons (no flaky tests from non-determinism)
+- Binary diffs for debugging (same data → same bytes)
+- Reproducible serialization for debugging
+
+---
+
+## Critical Implementation Notes
+
+### Most Important Things to Know
+
+**1. Field Order Matters**
+- Fields are encoded in the **exact order** specified by `blazeEncode(to:)`
+- Changing field order breaks compatibility with existing data
+- Always encode fields in the same order for compatibility
+
+```swift
+// Correct: Consistent field order
+func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+    encoder.encode(id)      // Always first
+    encoder.encode(text)    // Always second
+    encoder.encode(count)   // Always third
+}
+
+// Wrong: Changing order breaks compatibility
+func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+    encoder.encode(count)   // Changed order - breaks existing data!
+    encoder.encode(id)
+    encoder.encode(text)
+}
+```
+
+**2. Schema Evolution Requires Manual Handling**
+- BlazeBinary does NOT automatically handle schema changes
+- Use `decodeIfPresent()` and `skipUnknownField()` for backward compatibility
+- Always test schema evolution scenarios
+
+```swift
+// Correct: Handle schema evolution
+init(from decoder: BlazeBinaryDecoder) throws {
+    self.id = try decoder.decodeString()
+    self.text = try decoder.decodeString()
+    // New field: optional for backward compatibility
+    self.timestamp = try decoder.decodeIfPresent(Date.self) ?? Date()
+}
+```
+
+**3. Size Limits Are Hard Limits**
+- Frame size: 5 MB (cannot be changed)
+- Buffer size: 10 MB (cannot be changed)
+- Variable-length fields: 10 MB default (configurable via `maxAllowedLength`)
+
+```swift
+// Correct: Set appropriate limits
+let decoder = BlazeBinaryDecoder(data: data, maxAllowedLength: 1024 * 1024)  // 1MB limit
+let data = try decoder.decodeData()  // Throws if > 1MB
+```
+
+**4. Always Use Frames for Network Transport**
+- Raw BlazeBinary data has no length prefix
+- Use `BlazeFrameEncoder.encodeFrame()` for network transport
+- Use `BlazeFrameParser` for incremental parsing
+
+```swift
+// Correct: Use frames for network
+let payload = encoder.encodedData()
+let frame = try BlazeFrameEncoder.encodeFrame(payload)  // Adds 4-byte length prefix
+networkStream.write(frame)
+
+// Wrong: Sending raw data (no way to know where message ends)
+networkStream.write(encoder.encodedData())  // Don't do this!
+```
+
+**5. Decoding Errors Are Fail-Fast**
+- On error, decoding stops immediately
+- No partial state is returned
+- Always handle errors explicitly
+
+```swift
+// Correct: Handle errors explicitly
+do {
+    let message = try decoder.decode(Message.self)
+    // Use message
+} catch BlazeBinaryError.truncated {
+    // Handle incomplete data
+} catch BlazeBinaryError.decodeFailed(let reason) {
+    // Handle decode failure
+} catch {
+    // Handle other errors
+}
+```
+
+### Common Pitfalls
+
+**Pitfall 1: Forgetting to Use Frames**
+```swift
+// Wrong: No frame, can't parse on receiving end
+let data = encoder.encodedData()
+socket.write(data)
+
+// Correct: Use frames
+let frame = try BlazeFrameEncoder.encodeFrame(encoder.encodedData())
+socket.write(frame)
+```
+
+**Pitfall 2: Not Handling Partial Frames**
+```swift
+// Wrong: Assumes complete frame in one read
+let data = socket.read()
+let frame = try BlazeFrameEncoder.decodeFrame(data)  // May fail if partial
+
+// Correct: Use parser for incremental parsing
+let parser = BlazeFrameParser()
+for chunk in socket.readStream() {
+    try parser.append(chunk)
+    while let frame = try parser.nextFrame() {
+        // Process complete frame
+    }
+}
+```
+
+**Pitfall 3: Not Setting Size Limits**
+```swift
+// Wrong: No size limit, vulnerable to memory exhaustion
+let decoder = BlazeBinaryDecoder(data: untrustedData)
+let hugeData = try decoder.decodeData()  // May allocate huge amount
+
+// Correct: Set appropriate limits
+let decoder = BlazeBinaryDecoder(data: untrustedData, maxAllowedLength: 1024 * 1024)
+let data = try decoder.decodeData()  // Throws if > 1MB
+```
+
+**Pitfall 4: Changing Field Order**
+```swift
+// Wrong: Changing order breaks compatibility
+// Version 1:
+encoder.encode(id)
+encoder.encode(text)
+
+// Version 2: Changed order - breaks!
+encoder.encode(text)  // Wrong order
+encoder.encode(id)
+```
+
+---
+
 ## When to Use BlazeBinary
 
 Use BlazeBinary when you need:
@@ -130,6 +444,186 @@ Do not use BlazeBinary if you need:
 - Human-readable formats (use JSON)
 - Schema evolution with automatic migration (BlazeBinary requires manual handling)
 - Dynamic typing or reflection-based encoding
+
+---
+
+## Migration Guide: From JSON to BlazeBinary
+
+### Quick Migration Steps
+
+**Step 1: Define Your Types**
+```swift
+// Before (JSON)
+struct User: Codable {
+    let id: String
+    let name: String
+    let age: Int
+}
+
+// After (BlazeBinary)
+struct User: BlazeBinaryCodable {
+    let id: String
+    let name: String
+    let age: Int
+    
+    func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+        encoder.encode(id)
+        encoder.encode(name)
+        encoder.encode(age)
+    }
+    
+    init(from decoder: BlazeBinaryDecoder) throws {
+        self.id = try decoder.decodeString()
+        self.name = try decoder.decodeString()
+        self.age = try decoder.decodeInt()
+    }
+}
+```
+
+**Step 2: Replace Encoding**
+```swift
+// Before (JSON)
+let user = User(id: "123", name: "Alice", age: 30)
+let jsonData = try JSONEncoder().encode(user)
+
+// After (BlazeBinary)
+let user = User(id: "123", name: "Alice", age: 30)
+let encoder = BlazeBinaryEncoder()
+try encoder.encode(user)
+let binaryData = encoder.encodedData()
+```
+
+**Step 3: Replace Decoding**
+```swift
+// Before (JSON)
+let user = try JSONDecoder().decode(User.self, from: jsonData)
+
+// After (BlazeBinary)
+let decoder = BlazeBinaryDecoder(data: binaryData)
+let user = try decoder.decode(User.self)
+```
+
+**Step 4: Add Framing for Network Transport**
+```swift
+// Before (JSON - no framing needed, but inefficient)
+let jsonData = try JSONEncoder().encode(user)
+socket.write(jsonData)
+
+// After (BlazeBinary - use frames for network)
+let encoder = BlazeBinaryEncoder()
+try encoder.encode(user)
+let frame = try BlazeFrameEncoder.encodeFrame(encoder.encodedData())
+socket.write(frame)
+```
+
+### Key Differences from JSON
+
+| Aspect | JSON | BlazeBinary |
+|-------|------|-------------|
+| **Determinism** | Non-deterministic (field order varies) | Deterministic (same input → same bytes) |
+| **Size** | ~120 bytes (baseline) | ~18 bytes (85% smaller) |
+| **Performance** | ~800K ops/sec | ~4.1M ops/sec (5.1x faster) |
+| **Human-readable** | Yes | No (binary format) |
+| **Schema evolution** | Automatic (optional fields) | Manual (use `decodeIfPresent()`) |
+| **Network framing** | Not needed | Required (use `BlazeFrameEncoder`) |
+
+### Migration Checklist
+
+- [ ] Convert all `Codable` types to `BlazeBinaryCodable`
+- [ ] Replace `JSONEncoder`/`JSONDecoder` with `BlazeBinaryEncoder`/`BlazeBinaryDecoder`
+- [ ] Add frame encoding for network transport (`BlazeFrameEncoder.encodeFrame()`)
+- [ ] Add frame parsing for network reception (`BlazeFrameParser`)
+- [ ] Handle schema evolution manually (use `decodeIfPresent()` for new fields)
+- [ ] Set appropriate `maxAllowedLength` limits for untrusted data
+- [ ] Update tests (deterministic encoding enables reliable test comparisons)
+- [ ] Add TLS/encryption for network transport (BlazeBinary does not encrypt)
+
+### Common Migration Patterns
+
+**Pattern 1: Optional Fields (Schema Evolution)**
+```swift
+// Version 1: No timestamp field
+struct User: BlazeBinaryCodable {
+    let id: String
+    let name: String
+}
+
+// Version 2: Add timestamp (backward compatible)
+struct User: BlazeBinaryCodable {
+    let id: String
+    let name: String
+    let timestamp: Date?  // New optional field
+    
+    init(from decoder: BlazeBinaryDecoder) throws {
+        self.id = try decoder.decodeString()
+        self.name = try decoder.decodeString()
+        // Handle missing timestamp in old data
+        self.timestamp = try decoder.decodeIfPresent(Date.self)
+    }
+}
+```
+
+**Pattern 2: Arrays and Collections**
+```swift
+// JSON: Automatic array encoding
+struct Team: Codable {
+    let members: [User]
+}
+
+// BlazeBinary: Manual array encoding
+struct Team: BlazeBinaryCodable {
+    let members: [User]
+    
+    func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+        encoder.encode(members.count)  // Encode count first
+        for member in members {
+            try encoder.encode(member)
+        }
+    }
+    
+    init(from decoder: BlazeBinaryDecoder) throws {
+        let count = try decoder.decodeInt()
+        var members: [User] = []
+        for _ in 0..<count {
+            members.append(try decoder.decode(User.self))
+        }
+        self.members = members
+    }
+}
+```
+
+**Pattern 3: Dictionaries/Maps**
+```swift
+// JSON: Automatic dictionary encoding
+struct Config: Codable {
+    let settings: [String: String]
+}
+
+// BlazeBinary: Manual dictionary encoding (sorted keys for determinism)
+struct Config: BlazeBinaryCodable {
+    let settings: [String: String]
+    
+    func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
+        let sortedKeys = settings.keys.sorted()  // Sort for determinism
+        encoder.encode(sortedKeys.count)
+        for key in sortedKeys {
+            encoder.encode(key)
+            encoder.encode(settings[key]!)
+        }
+    }
+    
+    init(from decoder: BlazeBinaryDecoder) throws {
+        let count = try decoder.decodeInt()
+        var settings: [String: String] = [:]
+        for _ in 0..<count {
+            let key = try decoder.decodeString()
+            let value = try decoder.decodeString()
+            settings[key] = value
+        }
+        self.settings = settings
+    }
+}
+```
 
 ---
 
