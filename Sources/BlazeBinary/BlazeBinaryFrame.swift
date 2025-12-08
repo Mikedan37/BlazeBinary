@@ -99,8 +99,17 @@ public enum BlazeFrameEncoder {
         let encryptedPayload = try session.makeEncryptedFrame(from: processedPlaintext)
         
         // Verify frameType byte is present (required by secure session API)
-        guard encryptedPayload.count > 0 && encryptedPayload[0] == SecureFrameType.encrypted.rawValue else {
-            throw BlazeBinaryError.encryptionFailed("Invalid encrypted frame format")
+        guard encryptedPayload.count > 0 else {
+            throw BlazeBinaryError.encryptionFailed("Encrypted payload is empty")
+        }
+        let frameTypeByte = encryptedPayload.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 1 else {
+                return 0xFF // Invalid sentinel value
+            }
+            return bytes[0]
+        }
+        guard frameTypeByte == SecureFrameType.encrypted.rawValue else {
+            throw BlazeBinaryError.encryptionFailed("Invalid encrypted frame format: expected frameType \(SecureFrameType.encrypted.rawValue), got \(frameTypeByte)")
         }
         
         // Check size limit
@@ -264,13 +273,19 @@ public class BlazeFrameParser {
         // treat as v2.0. Otherwise, treat as v1.0.
         var isV2Format: Bool = false // Default to v1.0 format
         if buffer.count >= 6 {
-            // Safe to access buffer[0] and buffer[1] - we've checked buffer.count >= 6
+            // Safe access using withUnsafeBytes to prevent crashes on Linux
             guard buffer.count >= 2 else {
                 return nil // Need more data
             }
-            // Safe direct access - we've already checked buffer.count >= 6 and >= 2
-            let byte0 = buffer[0]
-            let byte1 = buffer[1]
+            let (byte0, byte1) = buffer.withUnsafeBytes { bytes -> (UInt8, UInt8) in
+                guard bytes.count >= 2 else {
+                    return (0xFF, 0xFF) // Invalid sentinel values
+                }
+                return (bytes[0], bytes[1])
+            }
+            guard byte0 != 0xFF && byte1 != 0xFF else {
+                return nil // Invalid buffer state
+            }
             
             // Check if bytes 0-1 could be frameType + compressionMode
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
@@ -313,13 +328,19 @@ public class BlazeFrameParser {
         
         if isV2Format {
             // v2.0 format: explicit frameType and compressionMode
-            // Safe to access - we've already validated buffer.count >= 6 in detection
+            // Safe access using withUnsafeBytes to prevent crashes on Linux
             guard buffer.count >= 2 else {
                 return nil // Need more data (shouldn't happen, but defensive)
             }
-            // Safe direct access - we've already validated buffer.count >= 6 in detection
-            let frameType = buffer[0]
-            let compressionModeByte = buffer[1]
+            let (frameType, compressionModeByte) = buffer.withUnsafeBytes { bytes -> (UInt8, UInt8) in
+                guard bytes.count >= 2 else {
+                    return (0xFF, 0xFF) // Invalid sentinel values
+                }
+                return (bytes[0], bytes[1])
+            }
+            guard frameType != 0xFF && compressionModeByte != 0xFF else {
+                return nil // Invalid buffer state
+            }
             
             // Read payload length (bytes 2-5, big-endian UInt32)
             guard buffer.count >= 6 else {
