@@ -10,8 +10,8 @@ We actively support the following versions with security updates:
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| 1.0.x   | y |
+| < 1.0   | n |
 
 ## Reporting a Vulnerability
 
