@@ -268,8 +268,13 @@ public class BlazeFrameParser {
             guard buffer.count >= 2 else {
                 return nil // Need more data
             }
-            let byte0 = buffer[0]
-            let byte1 = buffer[1]
+            // Use withUnsafeBytes for safer access on Linux
+            let (byte0, byte1) = buffer.withUnsafeBytes { bytes in
+                guard bytes.count >= 2 else {
+                    return (UInt8(0xFF), UInt8(0xFF)) // Invalid values
+                }
+                return (bytes[0], bytes[1])
+            }
             
             // Check if bytes 0-1 could be frameType + compressionMode
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
@@ -309,8 +314,13 @@ public class BlazeFrameParser {
             guard buffer.count >= 2 else {
                 return nil // Need more data (shouldn't happen, but defensive)
             }
-            let frameType = buffer[0]
-            let compressionModeByte = buffer[1]
+            // Use withUnsafeBytes for safer access on Linux
+            let (frameType, compressionModeByte) = buffer.withUnsafeBytes { bytes in
+                guard bytes.count >= 2 else {
+                    return (UInt8(0xFF), UInt8(0xFF)) // Invalid values
+                }
+                return (bytes[0], bytes[1])
+            }
             
             // Read payload length (bytes 2-5, big-endian UInt32)
             let lengthBytes = buffer.subdata(in: 2..<6)
