@@ -279,25 +279,32 @@ public class BlazeFrameParser {
             // Check if bytes 0-1 could be frameType + compressionMode
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
                 // Read potential payload length (bytes 2-5)
-                let lengthBytes = buffer.subdata(in: 2..<6)
-                let potentialLength = lengthBytes.withUnsafeBytes { bytes in
-                    var value: UInt32 = 0
-                    value |= UInt32(bytes[0]) << 24
-                    value |= UInt32(bytes[1]) << 16
-                    value |= UInt32(bytes[2]) << 8
-                    value |= UInt32(bytes[3])
-                    return value
-                }
-                
-                // If the potential payload length is reasonable (not absurdly large), treat as v2.0
-                // v1.0 frames with very small payloads (byte0=0x00, byte1=0x00) would have length=0, which is invalid
-                // So if byte0=0x00, byte1=0x00, and potentialLength is reasonable, it's likely v2.0
-                // But if byte0=0x00, byte1=0x00, and potentialLength is 0 or very large, it's likely v1.0
-                if potentialLength > 0 && potentialLength <= UInt32(maxFrameSize) {
-                    isV2Format = true
-                } else {
-                    // Potential length is invalid, treat as v1.0
+                guard buffer.count >= 6 else {
                     isV2Format = false
+                } else {
+                    let lengthBytes = buffer.subdata(in: 2..<6)
+                    let potentialLength = lengthBytes.withUnsafeBytes { bytes in
+                        guard bytes.count >= 4 else {
+                            return UInt32(0)
+                        }
+                        var value: UInt32 = 0
+                        value |= UInt32(bytes[0]) << 24
+                        value |= UInt32(bytes[1]) << 16
+                        value |= UInt32(bytes[2]) << 8
+                        value |= UInt32(bytes[3])
+                        return value
+                    }
+                    
+                    // If the potential payload length is reasonable (not absurdly large), treat as v2.0
+                    // v1.0 frames with very small payloads (byte0=0x00, byte1=0x00) would have length=0, which is invalid
+                    // So if byte0=0x00, byte1=0x00, and potentialLength is reasonable, it's likely v2.0
+                    // But if byte0=0x00, byte1=0x00, and potentialLength is 0 or very large, it's likely v1.0
+                    if potentialLength > 0 && potentialLength <= UInt32(maxFrameSize) {
+                        isV2Format = true
+                    } else {
+                        // Potential length is invalid, treat as v1.0
+                        isV2Format = false
+                    }
                 }
             } else {
                 // Bytes 0-1 don't look like frameType + compressionMode, treat as v1.0
@@ -323,8 +330,14 @@ public class BlazeFrameParser {
             }
             
             // Read payload length (bytes 2-5, big-endian UInt32)
+            guard buffer.count >= 6 else {
+                return nil // Need more data
+            }
             let lengthBytes = buffer.subdata(in: 2..<6)
             let payloadLength = lengthBytes.withUnsafeBytes { bytes in
+                guard bytes.count >= 4 else {
+                    return UInt32(0)
+                }
                 var value: UInt32 = 0
                 value |= UInt32(bytes[0]) << 24
                 value |= UInt32(bytes[1]) << 16
