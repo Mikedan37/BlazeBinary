@@ -6,19 +6,43 @@ final class FrameTests: XCTestCase {
         let payload = Data([0x01, 0x02, 0x03, 0x04])
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
         
-        XCTAssert(frame.count == 8) // 4 bytes length + 4 bytes payload
+        // v2.0 format: 2 bytes (frameType + compressionMode) + 4 bytes length + payload
+        XCTAssert(frame.count == 10) // 6 bytes header + 4 bytes payload
         
-        // Check length prefix (big-endian)
-        let length = frame.withUnsafeBytes { bytes in
-            UInt32(bigEndian: bytes.load(as: UInt32.self))
+        // Check frameType (byte 0) - should be 0x00 for plaintext
+        let frameType = frame.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 1 else { return 0xFF }
+            return bytes[0]
         }
-        XCTAssert(length == 4)
+        XCTAssert(frameType == 0x00, "Frame type should be 0x00 (plaintext)")
         
-        // Check payload
-        XCTAssert(frame[4] == 0x01)
-        XCTAssert(frame[5] == 0x02)
-        XCTAssert(frame[6] == 0x03)
-        XCTAssert(frame[7] == 0x04)
+        // Check compressionMode (byte 1) - should be 0x00 for none
+        let compressionMode = frame.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 2 else { return 0xFF }
+            return bytes[1]
+        }
+        XCTAssert(compressionMode == 0x00, "Compression mode should be 0x00 (none)")
+        
+        // Check length prefix (bytes 2-5, big-endian)
+        let length = frame.withUnsafeBytes { bytes -> UInt32 in
+            guard bytes.count >= 6 else { return 0 }
+            var value: UInt32 = 0
+            value |= UInt32(bytes[2]) << 24
+            value |= UInt32(bytes[3]) << 16
+            value |= UInt32(bytes[4]) << 8
+            value |= UInt32(bytes[5])
+            return value
+        }
+        XCTAssert(length == 4, "Payload length should be 4")
+        
+        // Check payload (bytes 6-9)
+        let payloadStart = 6
+        XCTAssert(frame.count >= payloadStart + 4, "Frame should have enough bytes for payload")
+        let extractedPayload = frame.withUnsafeBytes { bytes -> Data in
+            guard bytes.count >= payloadStart + 4 else { return Data() }
+            return Data(bytes[payloadStart..<(payloadStart + 4)])
+        }
+        XCTAssertEqual(extractedPayload, payload, "Payload should match")
     }
     
     func testEncodeOversizedFrame() throws {
@@ -104,9 +128,13 @@ final class FrameTests: XCTestCase {
     }
     
     func testFrameParserZeroLength() throws {
+        // Zero-length frame should be rejected
+        // v2.0 format: frameType (0x00) + compressionMode (0x00) + length (0x00000000) = 6 bytes
         var invalidFrame = Data()
-        let zeroLength = UInt32(0).bigEndian
-        invalidFrame.append(contentsOf: withUnsafeBytes(of: zeroLength) { Data($0) })
+        invalidFrame.append(0x00) // frameType
+        invalidFrame.append(0x00) // compressionMode
+        let zeroLength: UInt32 = 0
+        invalidFrame.append(contentsOf: withUnsafeBytes(of: zeroLength.bigEndian) { Data($0) })
         
         let parser = BlazeFrameParser()
         try parser.append(invalidFrame)
