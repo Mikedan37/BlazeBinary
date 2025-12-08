@@ -272,57 +272,56 @@ public class BlazeFrameParser {
         // Detection heuristic: If byte0 <= 0x02 AND byte1 <= 0x02 AND the resulting payload length is reasonable,
         // treat as v2.0. Otherwise, treat as v1.0.
         var isV2Format: Bool = false // Default to v1.0 format
-        if buffer.count >= 6 {
-            // Safe access using withUnsafeBytes to prevent crashes on Linux
-            guard buffer.count >= 2 else {
-                return nil // Need more data
+        
+        // First check if we have at least 2 bytes to check format
+        guard buffer.count >= 2 else {
+            return nil // Need more data
+        }
+        
+        let (byte0, byte1) = buffer.withUnsafeBytes { bytes -> (UInt8, UInt8) in
+            guard bytes.count >= 2 else {
+                return (0xFF, 0xFF) // Invalid sentinel values
             }
-            let (byte0, byte1) = buffer.withUnsafeBytes { bytes -> (UInt8, UInt8) in
-                guard bytes.count >= 2 else {
-                    return (0xFF, 0xFF) // Invalid sentinel values
+            return (bytes[0], bytes[1])
+        }
+        guard byte0 != 0xFF && byte1 != 0xFF else {
+            return nil // Invalid buffer state
+        }
+        
+        // Check if bytes 0-1 could be frameType + compressionMode
+        if (byte0 <= 0x02) && (byte1 <= 0x02) {
+            // Might be v2.0 format - need at least 6 bytes to read length
+            if buffer.count >= 6 {
+                // Use withUnsafeBytes to read directly - safer than subdata
+                let potentialLength = buffer.withUnsafeBytes { bytes -> UInt32 in
+                    guard bytes.count >= 6 else {
+                        return UInt32(0)
+                    }
+                    var value: UInt32 = 0
+                    value |= UInt32(bytes[2]) << 24
+                    value |= UInt32(bytes[3]) << 16
+                    value |= UInt32(bytes[4]) << 8
+                    value |= UInt32(bytes[5])
+                    return value
                 }
-                return (bytes[0], bytes[1])
-            }
-            guard byte0 != 0xFF && byte1 != 0xFF else {
-                return nil // Invalid buffer state
-            }
-            
-            // Check if bytes 0-1 could be frameType + compressionMode
-            if (byte0 <= 0x02) && (byte1 <= 0x02) {
-                // Read potential payload length (bytes 2-5)
-                if buffer.count >= 6 {
-                    // Use withUnsafeBytes to read directly - safer than subdata
-                    let potentialLength = buffer.withUnsafeBytes { bytes -> UInt32 in
-                        guard bytes.count >= 6 else {
-                            return UInt32(0)
-                        }
-                        var value: UInt32 = 0
-                        value |= UInt32(bytes[2]) << 24
-                        value |= UInt32(bytes[3]) << 16
-                        value |= UInt32(bytes[4]) << 8
-                        value |= UInt32(bytes[5])
-                        return value
-                    }
-                    
-                    // If the potential payload length is reasonable (not absurdly large), treat as v2.0
-                    // v1.0 frames with very small payloads (byte0=0x00, byte1=0x00) would have length=0, which is invalid
-                    // So if byte0=0x00, byte1=0x00, and potentialLength is reasonable, it's likely v2.0
-                    // But if byte0=0x00, byte1=0x00, and potentialLength is 0 or very large, it's likely v1.0
-                    if potentialLength > 0 && potentialLength <= UInt32(maxFrameSize) {
-                        isV2Format = true
-                    } else {
-                        // Potential length is invalid, treat as v1.0
-                        isV2Format = false
-                    }
+                
+                // If the potential payload length is reasonable (not absurdly large), treat as v2.0
+                // v1.0 frames with very small payloads (byte0=0x00, byte1=0x00) would have length=0, which is invalid
+                // So if byte0=0x00, byte1=0x00, and potentialLength is reasonable, it's likely v2.0
+                // But if byte0=0x00, byte1=0x00, and potentialLength is 0 or very large, it's likely v1.0
+                if potentialLength > 0 && potentialLength <= UInt32(maxFrameSize) {
+                    isV2Format = true
                 } else {
+                    // Potential length is invalid, treat as v1.0
                     isV2Format = false
                 }
             } else {
-                // Bytes 0-1 don't look like frameType + compressionMode, treat as v1.0
-                isV2Format = false
+                // Partial v2.0 frame detected but not enough data - return nil instead of falling back to v1.0
+                // This prevents misinterpreting partial v2.0 frames as invalid v1.0 frames
+                return nil
             }
         } else {
-            // Not enough bytes for v2.0 format, treat as v1.0
+            // Bytes 0-1 don't look like frameType + compressionMode, treat as v1.0
             isV2Format = false
         }
         
@@ -497,8 +496,16 @@ public class BlazeFrameParser {
             }
         } else {
             // v1.0 format (legacy): length prefix + payload
+            // First check if we have at least 4 bytes for the length prefix
+            guard buffer.count >= 4 else {
+                return nil // Need more data to read length
+            }
+            
             let lengthBytes = buffer.prefix(4)
             let length = lengthBytes.withUnsafeBytes { bytes in
+                guard bytes.count >= 4 else {
+                    return UInt32(0)
+                }
                 var value: UInt32 = 0
                 value |= UInt32(bytes[0]) << 24
                 value |= UInt32(bytes[1]) << 16
@@ -509,15 +516,15 @@ public class BlazeFrameParser {
             
             let lengthInt = Int(length)
             
-            // Validate frame length
-            guard lengthInt > 0 && lengthInt <= maxFrameSize else {
-                throw BlazeBinaryError.invalidFrameLength
-            }
-            
             // Check if we have the complete frame (4-byte header + payload)
             let totalFrameSize = 4 + lengthInt
             guard buffer.count >= totalFrameSize else {
                 return nil // Need more data
+            }
+            
+            // Now validate frame length (only after we know we have enough data)
+            guard lengthInt > 0 && lengthInt <= maxFrameSize else {
+                throw BlazeBinaryError.invalidFrameLength
             }
             
             // Extract payload (bytes 4+) - validate range
