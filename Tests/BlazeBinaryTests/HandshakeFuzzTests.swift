@@ -8,6 +8,7 @@
 
 import XCTest
 import Foundation
+import Crypto
 @testable import BlazeBinary
 
 /// Fuzzing tests for handshake protocol.
@@ -15,6 +16,34 @@ import Foundation
 /// Tests randomized corrupted inputs to ensure no crashes or undefined behavior,
 /// and that all invalid inputs are rejected gracefully.
 final class HandshakeFuzzTests: XCTestCase {
+    
+    // MARK: - Cross-Platform Random Helpers
+    
+    /// Generate random bytes (replaces arc4random_buf)
+    private func randomBytes(count: Int) -> Data {
+        let randomKey = SymmetricKey(size: .bits256) // 32 bytes
+        let randomData = randomKey.withUnsafeBytes { Data($0) }
+        // If we need more bytes, generate multiple keys
+        if count <= randomData.count {
+            return randomData.prefix(count)
+        }
+        var result = randomData
+        while result.count < count {
+            let moreKey = SymmetricKey(size: .bits256)
+            let moreData = moreKey.withUnsafeBytes { Data($0) }
+            result.append(moreData)
+        }
+        return result.prefix(count)
+    }
+    
+    /// Generate random number in range [0, upperBound) (replaces arc4random_uniform)
+    private func randomUniform(_ upperBound: UInt32) -> UInt32 {
+        guard upperBound > 0 else { return 0 }
+        // Generate random bytes and convert to UInt32
+        let randomData = randomBytes(count: 4)
+        let value = randomData.withUnsafeBytes { $0.load(as: UInt32.self) }
+        return value % upperBound
+    }
     
     // MARK: - Public Key Fuzzing
     
@@ -24,10 +53,7 @@ final class HandshakeFuzzTests: XCTestCase {
             var server = BlazeSecureHandshake(role: .server)
             
             // Generate random public key data
-            var randomKey = Data(count: 32)
-            randomKey.withUnsafeMutableBytes { bytes in
-                arc4random_buf(bytes.baseAddress, 32)
-            }
+            let randomKey = randomBytes(count: 32)
             
             let randomMessage = makeHandshakeMessage(type: 0x01, publicKey: randomKey)
             
@@ -51,12 +77,7 @@ final class HandshakeFuzzTests: XCTestCase {
         for size in sizes {
             var server = BlazeSecureHandshake(role: .server)
             
-            var randomKey = Data(count: size)
-            if size > 0 {
-                randomKey.withUnsafeMutableBytes { bytes in
-                    arc4random_buf(bytes.baseAddress, size)
-                }
-            }
+            let randomKey = size > 0 ? randomBytes(count: size) : Data()
             
             let message = makeHandshakeMessage(type: 0x01, publicKey: randomKey)
             
@@ -81,8 +102,8 @@ final class HandshakeFuzzTests: XCTestCase {
             
             // Randomly flip bits in nonce
             for i in nonceStart..<nonceEnd {
-                if arc4random_uniform(2) == 1 {
-                    fuzzed[i] ^= UInt8(arc4random_uniform(256))
+                if randomUniform(2) == 1 {
+                    fuzzed[i] ^= UInt8(randomUniform(256))
                 }
             }
             
@@ -109,8 +130,8 @@ final class HandshakeFuzzTests: XCTestCase {
             // Randomly corrupt ciphertext
             if tagStart > ciphertextStart {
                 for i in ciphertextStart..<tagStart {
-                    if arc4random_uniform(4) == 0 { // 25% chance per byte
-                        fuzzed[i] ^= UInt8(arc4random_uniform(256))
+                    if randomUniform(4) == 0 { // 25% chance per byte
+                        fuzzed[i] ^= UInt8(randomUniform(256))
                     }
                 }
             }
@@ -133,8 +154,8 @@ final class HandshakeFuzzTests: XCTestCase {
             
             // Randomly flip bits in tag
             for i in tagStart..<fuzzed.count {
-                if arc4random_uniform(2) == 1 {
-                    fuzzed[i] ^= UInt8(arc4random_uniform(256))
+                if randomUniform(2) == 1 {
+                    fuzzed[i] ^= UInt8(randomUniform(256))
                 }
             }
             
@@ -152,11 +173,8 @@ final class HandshakeFuzzTests: XCTestCase {
             var server = BlazeSecureHandshake(role: .server)
             
             // Generate random message of various sizes
-            let size = Int(arc4random_uniform(100)) + 1
-            var randomMessage = Data(count: size)
-            randomMessage.withUnsafeMutableBytes { bytes in
-                arc4random_buf(bytes.baseAddress, size)
-            }
+            let size = Int(randomUniform(100)) + 1
+            let randomMessage = randomBytes(count: size)
             
             // Must not crash
             let result = try? server.receiveRemotePublicKey(randomMessage)
@@ -172,20 +190,15 @@ final class HandshakeFuzzTests: XCTestCase {
             var message = Data()
             
             // Random version
-            message.append(UInt8(arc4random_uniform(256)))
+            message.append(UInt8(randomUniform(256)))
             // Random type
-            message.append(UInt8(arc4random_uniform(256)))
+            message.append(UInt8(randomUniform(256)))
             // Random flags
-            message.append(UInt8(arc4random_uniform(256)))
-            message.append(UInt8(arc4random_uniform(256)))
+            message.append(UInt8(randomUniform(256)))
+            message.append(UInt8(randomUniform(256)))
             // Random key data
-            let keySize = Int(arc4random_uniform(64))
-            var randomKey = Data(count: keySize)
-            if keySize > 0 {
-                randomKey.withUnsafeMutableBytes { bytes in
-                    arc4random_buf(bytes.baseAddress, keySize)
-                }
-            }
+            let keySize = Int(randomUniform(64))
+            let randomKey = keySize > 0 ? randomBytes(count: keySize) : Data()
             message.append(randomKey)
             
             // Must not crash
@@ -207,8 +220,8 @@ final class HandshakeFuzzTests: XCTestCase {
             
             // Randomly corrupt random bytes
             for i in 0..<fuzzed.count {
-                if arc4random_uniform(10) == 0 { // 10% chance per byte
-                    fuzzed[i] ^= UInt8(arc4random_uniform(256))
+                if randomUniform(10) == 0 { // 10% chance per byte
+                    fuzzed[i] ^= UInt8(randomUniform(256))
                 }
             }
             
@@ -223,11 +236,8 @@ final class HandshakeFuzzTests: XCTestCase {
         
         // Test various frame sizes
         for _ in 0..<20 {
-            let size = Int(arc4random_uniform(1000)) + 1
-            var randomFrame = Data(count: size)
-            randomFrame.withUnsafeMutableBytes { bytes in
-                arc4random_buf(bytes.baseAddress, size)
-            }
+            let size = Int(randomUniform(1000)) + 1
+            let randomFrame = randomBytes(count: size)
             
             // Must not crash
             let result = try? session.decryptFramePayload(randomFrame)
@@ -242,7 +252,7 @@ final class HandshakeFuzzTests: XCTestCase {
         
         // Fuzz by truncating at various points
         for _ in 0..<50 {
-            let truncatePoint = Int(arc4random_uniform(UInt32(encrypted.count)))
+            let truncatePoint = Int(randomUniform(UInt32(encrypted.count)))
             let truncated = encrypted.prefix(truncatePoint)
             
             // Must not crash
