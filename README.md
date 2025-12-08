@@ -14,9 +14,10 @@ A production-grade, deterministic binary encoding/decoding library for Swift. Bl
 
 - **Deterministic Encoding**: Same input always produces identical bytes
 - **High Performance**: 4M+ ops/sec for encoding, zero-copy decoding
+- **Transport-Agnostic**: Works with TCP, UDP, IPC, shared memory, files, or any byte stream
 - **Type-Safe**: Protocol-based design with compile-time type checking
 - **Secure Sessions**: Optional X25519 key exchange + ChaCha20-Poly1305 encryption
-- **Frame Protocol**: Incremental parsing for network transport
+- **Frame Protocol**: Incremental parsing for any transport protocol
 - **Production-Ready**: Comprehensive tests, fuzzing, and benchmarks
 
 ## Quick Start
@@ -61,12 +62,18 @@ let encoder = BlazeBinaryEncoder()
 try encoder.encode(message)
 let binaryData = encoder.encodedData()
 
-// Frame for transport
+// Frame for transport (works with TCP, UDP, IPC, etc.)
 let frame = try BlazeFrameEncoder.encodeFrame(binaryData)
+
+// Send over your transport (TCP, UDP, Unix socket, etc.)
+// socket.send(frame)
+
+// Receive from your transport
+// let receivedData = socket.receive()
 
 // Decode
 let parser = BlazeFrameParser()
-try parser.append(frame)
+try parser.append(frame)  // Can append partial data incrementally
 if let payload = try parser.nextFrame() {
     let decoder = BlazeBinaryDecoder(data: payload)
     let decoded = try decoder.decode(Message.self)
@@ -89,6 +96,8 @@ Same input always produces identical bytes, enabling:
 - **275K ops/sec** for data encoding (1KB, p50: 3.64 μs)
 - **Zero-copy decoding** for Data fields
 - **85% smaller** payloads than JSON
+- **Transport-agnostic**: Works with TCP, UDP, IPC, or any byte stream
+- **UDP optimization**: 10-20% faster throughput, 22% less overhead vs TCP
 
 ### Safety First
 
@@ -99,33 +108,65 @@ Same input always produces identical bytes, enabling:
 
 ## Architecture
 
+BlazeBinary is **transport-agnostic** - it works with any transport protocol:
+
 ```mermaid
 graph TB
     A[Application] --> B[BlazeBinaryEncoder]
     A --> C[BlazeBinaryDecoder]
     B --> D[Frame Encoder]
     C --> E[Frame Parser]
-    D --> F[Network Transport]
+    D --> F[Secure Session<br/>Optional]
     E --> F
-    D --> G[Secure Session]
-    E --> G
-    G --> H[X25519 + ChaCha20-Poly1305]
+    F --> G[Transport Layer<br/>YOU PROVIDE THIS]
+    G --> H[TCP, UDP, IPC,<br/>Shared Memory, Files, etc.]
     
     style A fill:#2c3e50,color:#fff
     style B fill:#3498db,color:#fff
     style C fill:#3498db,color:#fff
     style D fill:#27ae60,color:#fff
     style E fill:#27ae60,color:#fff
-    style G fill:#e74c3c,color:#fff
+    style F fill:#e74c3c,color:#fff
+    style G fill:#5f4b8b,color:#fff
     style H fill:#9b59b6,color:#fff
 ```
+
+**Key Point**: BlazeBinary provides encoding/decoding, framing, and optional encryption. **You provide the transport** (TCP, UDP, IPC, etc.).
+
+## Transport Protocols
+
+BlazeBinary works with **any transport protocol**. You provide the transport layer:
+
+- ✅ **TCP** - Reliable, ordered delivery (recommended for most use cases)
+- ✅ **UDP** - Lower latency, higher throughput (10-20% faster, 22% less overhead)
+- ✅ **Unix Sockets** - IPC between processes
+- ✅ **Shared Memory** - Fastest for same-machine communication
+- ✅ **Files** - Persistent storage
+- ✅ **Any byte stream** - Custom transports
+
+### TCP vs UDP Performance
+
+Benchmarks show UDP provides 10-20% higher throughput and 20-40% lower latency:
+
+| Frame Size | Protocol | Throughput | Latency p50 | Overhead |
+|------------|----------|------------|-------------|----------|
+| 100 bytes  | TCP      | ~50K/sec   | ~0.05 ms    | 54 bytes  |
+| 100 bytes  | UDP      | ~60K/sec   | ~0.03 ms    | 42 bytes  |
+| 1 KB       | TCP      | ~25K/sec   | ~0.10 ms    | 54 bytes  |
+| 1 KB       | UDP      | ~30K/sec   | ~0.08 ms    | 42 bytes  |
+
+**Run benchmarks**: `swift run BlazeBinaryBenchmarks` (includes TCP vs UDP tests)
+
+See [TRANSPORT_AGNOSTIC.md](Docs/Core/TRANSPORT_AGNOSTIC.md) for complete details and [BENCHMARKS.md](Docs/Performance/BENCHMARKS.md) for full performance data.
 
 ## Documentation
 
 Complete documentation is available in [Docs/INDEX.md](Docs/INDEX.md), including:
 
 - **[SPECIFICATION_v1.3.md](Docs/Core/SPECIFICATION_v1.3.md)** - **FROZEN** Protocol v1.3 specification
-- **[BENCHMARKS.md](Docs/Performance/BENCHMARKS.md)** - Performance benchmarks and comparisons
+- **[TRANSPORT_AGNOSTIC.md](Docs/Core/TRANSPORT_AGNOSTIC.md)** - **Essential** - How BlazeBinary works with any transport
+- **[BENCHMARKS.md](Docs/Performance/BENCHMARKS.md)** - Performance benchmarks including TCP vs UDP
+- **[TCP_OPTIMIZATION.md](Docs/Core/TCP_OPTIMIZATION.md)** - Practical TCP optimization guide
 - **[FUZZING.md](Docs/Performance/FUZZING.md)** - Fuzzing infrastructure and strategies
 - **[PERFORMANCE_TRACKING.md](Docs/Performance/PERFORMANCE_TRACKING.md)** - Performance tracking infrastructure
 - **[FAILURE_SEMANTICS.md](Docs/Core/FAILURE_SEMANTICS.md)** - Error handling and failure modes

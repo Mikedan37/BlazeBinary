@@ -16,7 +16,7 @@ graph TD
     B --> C[Internal Utilities<br/>Varint, Endianness, ByteBuffer, Validation]
     C --> D[Frame Layer<br/>FrameEncoder, FrameParser<br/>v2.0 explicit format]
     D --> E[Secure Session Layer<br/>Optional: Handshake, Encryption]
-    E --> F[Transport Layer<br/>Network, IPC, Storage]
+    E --> F[Transport Layer<br/>Any: TCP, UDP, IPC, Shared Memory, Files, etc.<br/>YOU PROVIDE THIS]
     
     E --> E1[BlazeSecureHandshake<br/>X25519 key agreement]
     E --> E2[BlazeSecureSession<br/>ChaCha20-Poly1305 AEAD]

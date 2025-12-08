@@ -38,6 +38,14 @@ Documentation is organized into the following categories:
 
 - **[FRAME_PROTOCOL.md](Core/FRAME_PROTOCOL.md)** – Frame structure and handshake flow documentation. Covers the frame header format, frame types, incremental parsing, and state machine for network transport.
 
+- **[LIGHTWEIGHT_TRANSPORT.md](Core/LIGHTWEIGHT_TRANSPORT.md)** – **Experimental** Lightweight transport protocol specification. Reduces TCP overhead by 85% (8 bytes vs 54 bytes) for BlazeBinary frames. Frame-aware, minimal overhead, optimized for datacenter/IPC use cases.
+
+- **[BLAZETRANSPORT_DECISION.md](Core/BLAZETRANSPORT_DECISION.md)** – **Decision document** analyzing whether BlazeTransport should be implemented. Includes realistic performance analysis, cost-benefit comparison, and recommendation to keep as specification-only for now.
+
+- **[TCP_OPTIMIZATION.md](Core/TCP_OPTIMIZATION.md)** – **Practical guide** for optimizing TCP usage with BlazeBinary. Provides 80% of BlazeTransport's benefit with 1% of the effort. Includes code examples and performance comparisons.
+
+- **[TRANSPORT_AGNOSTIC.md](Core/TRANSPORT_AGNOSTIC.md)** – **Essential reading** - Explains that BlazeBinary is transport-agnostic and works with ANY transport protocol (TCP, UDP, IPC, shared memory, files, etc.). Clarifies what BlazeBinary provides vs. what you provide.
+
 - **[FAILURE_SEMANTICS.md](Core/FAILURE_SEMANTICS.md)** – Failure modes and error handling behavior. Defines how BlazeBinary responds to malformed frames, authentication failures, replay attacks, and other error conditions.
 
 ### Reference & Utilities
@@ -74,6 +82,8 @@ Documentation is organized into the following categories:
 ## Performance & Testing
 
 - **[BENCHMARKS.md](Performance/BENCHMARKS.md)** – Performance results and methodology. Includes comparisons with JSON, CBOR, and MessagePack, along with encoding/decoding throughput measurements, percentiles, and performance charts.
+
+- **[TRANSPORT_COMPARISON.md](Performance/TRANSPORT_COMPARISON.md)** – **Mathematical performance comparison** between TCP and BlazeTransport. Includes overhead analysis, latency formulas, throughput calculations, efficiency metrics, and real-world scenarios with numerical examples.
 
 - **[FUZZING.md](Performance/FUZZING.md)** – Fuzzing infrastructure and strategies. Documents fuzzing targets, corpus seeds, crash reproducers, and fuzzing best practices for Protocol v1.3.
 

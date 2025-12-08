@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Network
 import BlazeBinary
 import Crypto
 
@@ -249,6 +250,58 @@ let dataMedium = encoderMedium.encodedData()
 
 let encoderLarge = BlazeBinaryEncoder()
 encoderLarge.encode(Int.max)
+
+// MARK: - Transport Benchmarks (TCP vs UDP)
+
+print("\n=== Transport Benchmarks (TCP vs UDP) ===")
+print("Note: These benchmarks require network setup and may take longer...\n")
+
+let transportRunner = TransportBenchmarkRunner()
+
+// Small frames (100 bytes)
+print("Testing small frames (100 bytes)...")
+do {
+    let tcpResult = try transportRunner.runTCPBenchmark(frameSize: 100, iterations: 1000)
+    print("  TCP benchmark completed")
+    
+    let udpResult = try transportRunner.runUDPBenchmark(frameSize: 100, iterations: 1000)
+    print("  UDP benchmark completed")
+    
+    print(transportRunner.compareResults(tcpResult, udpResult))
+} catch {
+    print("  Transport benchmark failed: \(error)")
+    print("  (This is expected if network permissions are not available)\n")
+}
+
+// Medium frames (1KB)
+print("Testing medium frames (1KB)...")
+do {
+    let tcpResult = try transportRunner.runTCPBenchmark(frameSize: 1024, iterations: 500)
+    print("  TCP benchmark completed")
+    
+    let udpResult = try transportRunner.runUDPBenchmark(frameSize: 1024, iterations: 500)
+    print("  UDP benchmark completed")
+    
+    print(transportRunner.compareResults(tcpResult, udpResult))
+} catch {
+    print("  Transport benchmark failed: \(error)")
+    print("  (This is expected if network permissions are not available)\n")
+}
+
+// Large frames (8KB)
+print("Testing large frames (8KB)...")
+do {
+    let tcpResult = try transportRunner.runTCPBenchmark(frameSize: 8192, iterations: 100)
+    print("  TCP benchmark completed")
+    
+    let udpResult = try transportRunner.runUDPBenchmark(frameSize: 8192, iterations: 100)
+    print("  UDP benchmark completed")
+    
+    print(transportRunner.compareResults(tcpResult, udpResult))
+} catch {
+    print("  Transport benchmark failed: \(error)")
+    print("  (This is expected if network permissions are not available)\n")
+}
 let dataLarge = encoderLarge.encodedData()
 
 _ = try runner.runBenchmark(name: "Varint decode (small)", iterations: 100000) {
