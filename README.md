@@ -130,65 +130,79 @@ See [SPECIFICATION.md](Docs/SPECIFICATION.md) for complete format specification 
 
 ### Component Overview
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    BlazeBinary Module                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  ┌──────────────────┐         ┌──────────────────┐          │
-│  │ BlazeBinary      │         │ BlazeBinary      │          │
-│  │ Encoder          │◄────────┤ Decoder          │          │
-│  └──────────────────┘         └──────────────────┘          │
-│         │                              │                    │
-│         │ encode()                     │ decode()           │
-│         ▼                              ▼                    │
-│  ┌──────────────────────────────────────────────┐           │
-│  │         Binary Data Stream                    │          │
-│  └──────────────────────────────────────────────┘           │
-│                              │                              │
-│                              ▼                              │
-│  ┌──────────────────┐         ┌──────────────────┐          │
-│  │ BlazeFrame       │         │ BlazeFrame       │          │
-│  │ Encoder          │         │ Parser           │          │
-│  └──────────────────┘         └──────────────────┘          │
-│         │                              │                    │
-│         │ encodeFrame()                │ append()           │
-│         │                              │ nextFrame()        │
-│         ▼                              ▼                    │
-│  ┌──────────────────────────────────────────────┐           │
-│  │      Framed Data (for IPC/Sockets)           │           │
-│  └──────────────────────────────────────────────┘           │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph Module["BlazeBinary Module"]
+        Encoder[BlazeBinary Encoder]
+        Decoder[BlazeBinary Decoder]
+        BinaryStream[Binary Data Stream]
+        FrameEnc[BlazeFrame Encoder]
+        FramePars[BlazeFrame Parser]
+        FramedData[Framed Data<br/>for IPC/Sockets]
+        
+        Encoder -->|encode| BinaryStream
+        BinaryStream -->|decode| Decoder
+        BinaryStream --> FrameEnc
+        FrameEnc -->|encodeFrame| FramedData
+        FramedData -->|append| FramePars
+        FramePars -->|nextFrame| BinaryStream
+    end
+    
+    style Module fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style Encoder fill:#fff4e1
+    style Decoder fill:#fff4e1
+    style FrameEnc fill:#e8f5e9
+    style FramePars fill:#e8f5e9
+    style BinaryStream fill:#fce4ec
+    style FramedData fill:#f3e5f5
 ```
 
 ### Protocol Hierarchy
 
-```
-BlazeBinaryEncodable  ──┐
-                        ├──► BlazeBinaryCodable
-BlazeBinaryDecodable  ──┘
-
-User Types (structs/classes)
-    │
-    ├──► Implement blazeEncode(to:)
-    └──► Implement init(from:)
+```mermaid
+graph TD
+    Encodable[BlazeBinaryEncodable]
+    Decodable[BlazeBinaryDecodable]
+    Codable[BlazeBinaryCodable]
+    UserTypes[User Types<br/>structs/classes]
+    
+    Encodable --> Codable
+    Decodable --> Codable
+    UserTypes -->|Implement| Encodable
+    UserTypes -->|Implement| Decodable
+    
+    style Codable fill:#e1f5ff
+    style Encodable fill:#fff4e1
+    style Decodable fill:#fff4e1
+    style UserTypes fill:#e8f5e9
 ```
 
 ### Data Flow
 
-```
-Encoding Flow:
-┌──────────┐      ┌──────────────┐      ┌──────────┐      ┌──────────┐
-│  Swift   │ ───► │   BlazeBinary│ ───► │  Binary  │ ───► │  Frame   │
-│  Value   │      │   Encoder    │      │   Data   │      │  (IPC)   │
-└──────────┘      └──────────────┘      └──────────┘      └──────────┘
-
-Decoding Flow:
-┌──────────┐      ┌──────────────┐      ┌──────────┐      ┌──────────┐
-│  Frame   │ ───► │   BlazeFrame │ ───► │  Binary  │ ───► │  Swift   │
-│  (IPC)   │      │   Parser     │      │   Data   │      │  Value   │
-└──────────┘      └──────────────┘      └──────────┘      └──────────┘
+```mermaid
+graph LR
+    subgraph Encode["Encoding Flow"]
+        SwiftVal1[Swift Value] --> Encoder1[BlazeBinary Encoder]
+        Encoder1 --> Binary1[Binary Data]
+        Binary1 --> Frame1[Frame IPC]
+    end
+    
+    subgraph Decode["Decoding Flow"]
+        Frame2[Frame IPC] --> Parser[BlazeFrame Parser]
+        Parser --> Binary2[Binary Data]
+        Binary2 --> Decoder[BlazeBinary Decoder]
+        Decoder --> SwiftVal2[Swift Value]
+    end
+    
+    style SwiftVal1 fill:#e1f5ff
+    style SwiftVal2 fill:#e1f5ff
+    style Encoder1 fill:#fff4e1
+    style Decoder fill:#fff4e1
+    style Binary1 fill:#e8f5e9
+    style Binary2 fill:#e8f5e9
+    style Frame1 fill:#fce4ec
+    style Frame2 fill:#fce4ec
+    style Parser fill:#f3e5f5
 ```
 
 ---
@@ -272,210 +286,200 @@ struct Example: BlazeBinaryCodable {
 Varints use LEB128 (Little-Endian Base 128) encoding. Each byte contains 7 bits of data and 1 continuation bit.
 
 **Encoding Process**:
-```
-Value: 300 (0x012C)
 
-Step 1: 300 & 0x7F = 0x2C (44)
-        300 >> 7 = 2 (more data)
-        Byte 1: 0xAC (0x2C | 0x80)
-
-Step 2: 2 & 0x7F = 0x02
-        2 >> 7 = 0 (done)
-        Byte 2: 0x02
-
-Result: [0xAC, 0x02]
+```mermaid
+flowchart TD
+    Start([Value: 300]) --> Step1[Step 1: Extract lower 7 bits]
+    Step1 --> Calc1["300 & 0x7F = 0x2C (44)<br/>300 >> 7 = 2"]
+    Calc1 --> Byte1[Byte 0: 0xAC<br/>0x2C | 0x80]
+    Byte1 --> Step2[Step 2: Process remaining]
+    Step2 --> Calc2["2 & 0x7F = 0x02<br/>2 >> 7 = 0 (done)"]
+    Calc2 --> Byte2[Byte 1: 0x02]
+    Byte2 --> Result[Result: [0xAC, 0x02]]
+    
+    style Start fill:#e1f5ff
+    style Result fill:#e8f5e9
 ```
 
 **Visual Representation**:
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Varint: 300                          │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Byte 0:  1 0 1 0 1 1 0 0  = 0xAC                       │
-│            │ └─┴─┴─┴─┴─┘                                │
-│            │     │                                      │
-│         Continuation  Data (44 = 0x2C)                  │
-│         bit (1)                                         │
-│                                                         │
-│  Byte 1:  0 0 0 0 0 0 1 0  = 0x02                       │
-│            │ └─┴─┴─┴─┴─┘                                │
-│            │                                            │
-│         Continuation  Data (2)                          │
-│         bit (0 = done)                                  │
-│                                                         │
-│  Decode: 44 + (2 << 7) = 44 + 256 = 300                 │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph TD
+    subgraph Varint["Varint Encoding: 300"]
+        Byte0["Byte 0: 0xAC<br/>┌─────────────────┐<br/>│ 1 │ 0 1 0 1 1 0 0 │<br/>│ C │   Data (44)   │<br/>└─────────────────┘<br/>Continuation=1"]
+        Byte1["Byte 1: 0x02<br/>┌─────────────────┐<br/>│ 0 │ 0 0 0 0 0 1 0 │<br/>│ C │   Data (2)    │<br/>└─────────────────┘<br/>Continuation=0 (done)"]
+        Decode["Decode:<br/>44 + (2 << 7)<br/>= 44 + 256<br/>= 300"]
+        
+        Byte0 --> Byte1
+        Byte1 --> Decode
+    end
+    
+    style Varint fill:#e1f5ff
+    style Byte0 fill:#fff4e1
+    style Byte1 fill:#fff4e1
+    style Decode fill:#e8f5e9
 ```
 
 **Signed Integer Encoding (Zigzag)**:
 
 Signed integers use zigzag encoding before varint encoding:
 
-```
-Zigzag Formula: (value << 1) ^ (value >> 63)
-
-Examples:
- 0 →  0 → [0x00]
- 1 →  2 → [0x02]
--1 →  1 → [0x01]
- 2 →  4 → [0x04]
--2 →  3 → [0x03]
+```mermaid
+graph LR
+    subgraph Examples["Zigzag Examples"]
+        E1["0 → 0 → [0x00]"]
+        E2["1 → 2 → [0x02]"]
+        E3["-1 → 1 → [0x01]"]
+        E4["2 → 4 → [0x04]"]
+        E5["-2 → 3 → [0x03]"]
+    end
+    
+    style Examples fill:#e1f5ff
 ```
 
 **Visual Representation**:
-```
-┌─────────────────────────────────────────────────────────┐
-│              Signed Integer: -100                       │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Step 1: Zigzag Encode                                  │
-│    -100 << 1 = -200                                     │
-│    -100 >> 63 = -1 (all 1s)                             │
-│    -200 ^ -1 = 199                                      │
-│                                                         │
-│  Step 2: Varint Encode 199                              │
-│    199 & 0x7F = 0x47 (71)                               │
-│    199 >> 7 = 2                                         │
-│    Byte 0: 0xC7 (0x47 | 0x80)                           │
-│    Byte 1: 0x02                                         │
-│                                                         │
-│  Result: [0xC7, 0x02]                                   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+flowchart TD
+    Start([Signed Integer: -100]) --> Zigzag[Step 1: Zigzag Encode]
+    Zigzag --> Calc1["-100 << 1 = -200<br/>-100 >> 63 = -1<br/>-200 ^ -1 = 199"]
+    Calc1 --> Varint[Step 2: Varint Encode 199]
+    Varint --> Calc2["199 & 0x7F = 0x47<br/>199 >> 7 = 2"]
+    Calc2 --> Bytes["Byte 0: 0xC7 (0x47 | 0x80)<br/>Byte 1: 0x02"]
+    Bytes --> Result[Result: [0xC7, 0x02]]
+    
+    style Start fill:#e1f5ff
+    style Result fill:#e8f5e9
 ```
 
 ### Fixed-Width Little-Endian Encoding
 
 **UInt32 Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│                  UInt32: 0x12345678                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Byte 0: 0x78  (LSB - Least Significant Byte)           │
-│  Byte 1: 0x56                                           │
-│  Byte 2: 0x34                                           │
-│  Byte 3: 0x12  (MSB - Most Significant Byte)            │
-│                                                         │
-│  Layout: [0x78, 0x56, 0x34, 0x12]                       │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph LR
+    subgraph UInt32["UInt32: 0x12345678 (Little-Endian)"]
+        B0[Byte 0: 0x78<br/>LSB] --> B1[Byte 1: 0x56]
+        B1 --> B2[Byte 2: 0x34]
+        B2 --> B3[Byte 3: 0x12<br/>MSB]
+    end
+    
+    Layout["Layout: [0x78, 0x56, 0x34, 0x12]"]
+    B3 --> Layout
+    
+    style UInt32 fill:#e1f5ff
+    style Layout fill:#e8f5e9
 ```
 
 **UInt64 Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│            UInt64: 0x0123456789ABCDEF                   │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Byte 0: 0xEF  (LSB)                                    │
-│  Byte 1: 0xCD                                           │
-│  Byte 2: 0xAB                                           │
-│  Byte 3: 0x89                                           │
-│  Byte 4: 0x67                                           │
-│  Byte 5: 0x45                                           │
-│  Byte 6: 0x23                                           │
-│  Byte 7: 0x01  (MSB)                                    │
-│                                                          │
-│  Layout: [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01]│
-│                                                          │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph LR
+    subgraph UInt64["UInt64: 0x0123456789ABCDEF (Little-Endian)"]
+        B0[Byte 0: 0xEF<br/>LSB] --> B1[Byte 1: 0xCD]
+        B1 --> B2[Byte 2: 0xAB]
+        B2 --> B3[Byte 3: 0x89]
+        B3 --> B4[Byte 4: 0x67]
+        B4 --> B5[Byte 5: 0x45]
+        B5 --> B6[Byte 6: 0x23]
+        B6 --> B7[Byte 7: 0x01<br/>MSB]
+    end
+    
+    Layout["Layout: [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01]"]
+    B7 --> Layout
+    
+    style UInt64 fill:#e1f5ff
+    style Layout fill:#e8f5e9
 ```
 
 **Bool Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Bool Encoding                        │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  true  → 0x01                                           │
-│  false → 0x00                                           │
-│                                                         │
-│  Invalid values (not 0x00 or 0x01) cause decode error   │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph LR
+    True[true] --> Enc1[Encodes to: 0x01]
+    False[false] --> Enc2[Encodes to: 0x00]
+    Invalid[Invalid values<br/>not 0x00 or 0x01] --> Error[Decode Error]
+    
+    style True fill:#e8f5e9
+    style False fill:#e8f5e9
+    style Invalid fill:#ffebee
+    style Error fill:#ffebee
 ```
 
 ### Length-Prefixed Encoding
 
 **Data Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│            Data: [0x01, 0x02, 0x03]                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌─────────────┐  ┌──────────────────────────────────┐  │
-│  │ Varint(3)   │  │  Payload Bytes                   │  │
-│  │ [0x03]      │  │  [0x01, 0x02, 0x03]              │  │
-│  └─────────────┘  └──────────────────────────────────┘  │
-│                                                         │
-│  Total: 4 bytes                                         │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph LR
+    subgraph Data["Data: [0x01, 0x02, 0x03]"]
+        Length[Varint Length<br/>[0x03]]
+        Payload[Payload Bytes<br/>[0x01, 0x02, 0x03]]
+        Length --> Payload
+    end
+    
+    Total["Total: 4 bytes"]
+    Payload --> Total
+    
+    style Data fill:#e1f5ff
+    style Length fill:#fff4e1
+    style Payload fill:#e8f5e9
+    style Total fill:#f3e5f5
 ```
 
 **String Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│            String: "Hello"                              │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Step 1: Convert to UTF-8                               │
-│    "Hello" → [0x48, 0x65, 0x6C, 0x6C, 0x6F]             │
-│                                                         │
-│  Step 2: Encode with length prefix                      │
-│    ┌─────────────┐  ┌──────────────────────────────  ┐  │
-│    │ Varint(5)   │  │  UTF-8 Bytes                   │  │
-│    │ [0x05]      │  │  [0x48, 0x65, 0x6C, 0x6C, 0x6F]│  │
-│    └─────────────┘  └──────────────────────────────  ┘  │
-│                                                         │
-│  Total: 6 bytes                                         │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+flowchart TD
+    Start([String: Hello]) --> UTF8[Step 1: Convert to UTF-8]
+    UTF8 --> Bytes["[0x48, 0x65, 0x6C, 0x6C, 0x6F]"]
+    Bytes --> Encode[Step 2: Encode with length prefix]
+    Encode --> Result["Varint(5): [0x05]<br/>UTF-8: [0x48, 0x65, 0x6C, 0x6C, 0x6F]<br/>Total: 6 bytes"]
+    
+    style Start fill:#e1f5ff
+    style Result fill:#e8f5e9
 ```
 
 ### Array Encoding
 
 **Format**:
-```
-┌─────────────────────────────────────────────────────────┐
-│        Array: [Item1, Item2, Item3]                     │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌─────────────┐  ┌──────┐  ┌──────┐  ┌──────┐          │
-│  │ Varint(3)   │  │Item1 │  │Item2 │  │Item3 │          │
-│  │ [0x03]      │  │      │  │      │  │      │          │
-│  └─────────────┘  └──────┘  └──────┘  └──────┘          │
-│                                                         │
-│  Each item is encoded according to its BlazeBinary      │
-│  Encodable implementation                               │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+graph LR
+    subgraph Array["Array: [Item1, Item2, Item3]"]
+        Count[Varint Count<br/>[0x03]]
+        Item1[Item1]
+        Item2[Item2]
+        Item3[Item3]
+        Count --> Item1
+        Item1 --> Item2
+        Item2 --> Item3
+    end
+    
+    Note["Each item encoded according to<br/>BlazeBinaryEncodable implementation"]
+    Item3 --> Note
+    
+    style Array fill:#e1f5ff
+    style Count fill:#fff4e1
+    style Note fill:#f3e5f5
 ```
 
 **Example: Array of Strings**:
-```
-Array: ["Hi", "Bye"]
 
-┌─────────────────────────────────────────────────────────┐
-│                                                         │
-│  Count: [0x02]                                          │
-│                                                         │
-│  Item 0: "Hi"                                           │
-│    ┌──────┐  ┌──────────┐                               │
-│    │ 0x02 │  │ 0x48 0x69 │                              │
-│    └──────┘  └──────────┘                               │
-│                                                         │
-│  Item 1: "Bye"                                          │
-│    ┌──────┐  ┌──────────────────┐                       │
-│    │ 0x03 │  │ 0x42 0x79 0x65   │                       │
-│    └──────┘  └──────────────────┘                       │
-│                                                         │
-│  Total: 1 + (1+2) + (1+3) = 8 bytes                     │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    Start([Array: Hi, Bye]) --> Count[Count: [0x02]]
+    Count --> Item0[Item 0: Hi]
+    Count --> Item1[Item 1: Bye]
+    
+    Item0 --> Enc0["Length: [0x02]<br/>UTF-8: [0x48, 0x69]"]
+    Item1 --> Enc1["Length: [0x03]<br/>UTF-8: [0x42, 0x79, 0x65]"]
+    
+    Enc0 --> Total[Total: 1 + 1+2 + 1+3 = 8 bytes]
+    Enc1 --> Total
+    
+    style Start fill:#e1f5ff
+    style Total fill:#e8f5e9
 ```
 
 ### Composite Type Encoding
@@ -490,31 +494,22 @@ struct Person: BlazeBinaryCodable {
 ```
 
 **Binary Layout**:
-```
-┌─────────────────────────────────────────────────────────┐
-│              Person Encoding                            │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Field 1: id (UUID as String)                           │
-│    ┌─────────────┐  ┌────────────────────────────── ┐   │
-│    │ Varint(36)  │  │  UUID String UTF-8            │   │
-│    │             │  │  "550e8400-e29b-41d4-a716-..."│   │
-│    └─────────────┘  └────────────────────────────── ┘   │
-│                                                         │
-│  Field 2: name (String)                                 │
-│    ┌─────────────┐  ┌──────────────────────────────┐    │
-│    │ Varint(4)   │  │  "John" UTF-8                │    │
-│    └─────────────┘  └──────────────────────────────┘    │
-│                                                         │
-│  Field 3: age (Int as Varint)                           │
-│    ┌─────────────┐                                      │
-│    │ Varint(25)  │                                      │
-│    │ [0x19]      │                                      │
-│    └─────────────┘                                      │
-│                                                         │
-│  Decoding MUST follow the exact same order!             │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+
+```mermaid
+flowchart TD
+    Start([Person Encoding]) --> Field1[Field 1: id UUID as String]
+    Field1 --> Enc1["Varint Length: 36<br/>UUID String UTF-8"]
+    
+    Enc1 --> Field2[Field 2: name String]
+    Field2 --> Enc2["Varint Length: 4<br/>John UTF-8"]
+    
+    Enc2 --> Field3[Field 3: age Int]
+    Field3 --> Enc3["Varint: 25<br/>[0x19]"]
+    
+    Enc3 --> Note[Decoding MUST follow<br/>the exact same order!]
+    
+    style Start fill:#e1f5ff
+    style Note fill:#fff4e1
 ```
 
 ---
@@ -527,114 +522,97 @@ Frames are used for IPC (Inter-Process Communication) and socket-based protocols
 
 ### Frame Structure
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    BlazeBinary Frame                    │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  ┌──────────────────────┐  ┌──────────────────────────┐ │
-│  │ Length Prefix        │  │  Payload                 │ │
-│  │ (4 bytes, big-endian)│  │  (BlazeBinary encoded)   │ │
-│  └──────────────────────┘  └──────────────────────────┘ │
-│                                                         │
-│  Length Prefix Format (Big-Endian UInt32):              │
-│    ┌──────────────────────────────────────────────┐     │
-│    │ Byte 0: MSB (Most Significant Byte)          │     │
-│    │ Byte 1:                                      │     │
-│    │ Byte 2:                                      │     │
-│    │ Byte 3: LSB (Least Significant Byte)         │     │
-│    └──────────────────────────────────────────────┘     │
-│                                                         │
-│  Example: Payload length = 1000 (0x000003E8)            │
-│    Length prefix: [0x00, 0x00, 0x03, 0xE8]              │
-│    Total frame: 4 + 1000 = 1004 bytes                   │
-│                                                         │
-│  Constraints:                                           │
-│    - Max frame size: 5 MB (5,242,880 bytes)             │
-│    - Max buffer size: 10 MB (10,485,760 bytes)          │
-│    - Length must be > 0 and <= 5,242,880                │
-│    - Length 0 throws BlazeBinaryError.invalidFrameLength│
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    subgraph Frame["BlazeBinary Frame"]
+        Length[Length Prefix<br/>4 bytes, big-endian]
+        Payload[Payload<br/>BlazeBinary encoded]
+        Length --> Payload
+    end
+    
+    subgraph Format["Length Prefix Format (Big-Endian UInt32)"]
+        MSB[Byte 0: MSB] --> B1[Byte 1]
+        B1 --> B2[Byte 2]
+        B2 --> LSB[Byte 3: LSB]
+    end
+    
+    Example["Example: Payload = 1000 (0x000003E8)<br/>Length: [0x00, 0x00, 0x03, 0xE8]<br/>Total: 4 + 1000 = 1004 bytes"]
+    
+    Constraints["Constraints:<br/>- Max frame: 5 MB<br/>- Max buffer: 10 MB<br/>- Length > 0 and <= 5,242,880"]
+    
+    Frame --> Format
+    Format --> Example
+    Example --> Constraints
+    
+    style Frame fill:#e1f5ff
+    style Format fill:#fff4e1
+    style Example fill:#e8f5e9
+    style Constraints fill:#fce4ec
 ```
 
 ### Frame Encoding Example
 
-```
-Payload: [0x01, 0x02, 0x03, 0x04] (4 bytes)
-
-┌───────────────────────────────────────────────────────── ┐
-│                                                          │
-│  Step 1: Calculate payload length = 4                    │
-│                                                          │
-│  Step 2: Convert to big-endian UInt32                    │
-│    4 = 0x00000004                                        │
-│    Big-endian: [0x00, 0x00, 0x00, 0x04]                  │
-│                                                          │
-│  Step 3: Concatenate length + payload                    │
-│    Frame: [0x00, 0x00, 0x00, 0x04, 0x01, 0x02, 0x03, 0x04]│
-│                                                          │
-│  Total frame size: 8 bytes                               │
-│                                                          │
-└───────────────────────────────────────────────────────── ┘
+```mermaid
+flowchart TD
+    Start([Payload: 0x01, 0x02, 0x03, 0x04<br/>4 bytes]) --> Step1[Step 1: Calculate length]
+    Step1 --> Len["Length = 4"]
+    Len --> Step2[Step 2: Convert to big-endian UInt32]
+    Step2 --> BE["4 = 0x00000004<br/>Big-endian: [0x00, 0x00, 0x00, 0x04]"]
+    BE --> Step3[Step 3: Concatenate]
+    Step3 --> Result["Frame: [0x00, 0x00, 0x00, 0x04,<br/>        0x01, 0x02, 0x03, 0x04]<br/>Total: 8 bytes"]
+    
+    style Start fill:#e1f5ff
+    style Result fill:#e8f5e9
 ```
 
 ### Streaming Frame Parsing
 
 The `BlazeFrameParser` handles incremental frame parsing for network streams:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│           Streaming Frame Parser State Machine          │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  State 1: Waiting for Length Prefix                     │
-│    Buffer: [0x00, 0x00]  (2 bytes)                      │
-│    Action: Need more data (need 4 bytes)                │
-│    Result: nextFrame() → nil                            │
-│                                                         │
-│  State 2: Length Prefix Complete                        │
-│    Buffer: [0x00, 0x00, 0x00, 0x04]  (4 bytes)          │
-│    Action: Validate length (4 <= 5MB) ✓                 │
-│    Action: Check payload availability                   │
-│    Result: Need 4 more bytes for payload                │
-│                                                         │
-│  State 3: Complete Frame Available                      │
-│    Buffer: [0x00, 0x00, 0x00, 0x04, 0x01, 0x02, ...]    │
-│    Action: Extract payload [0x01, 0x02, 0x03, 0x04]     │
-│    Action: Remove frame from buffer                     │
-│    Result: nextFrame() → Data([0x01, 0x02, 0x03, 0x04]) │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+stateDiagram-v2
+    [*] --> WaitingLength: Parser initialized
+    WaitingLength: Buffer: [0x00, 0x00]<br/>Need 4 bytes
+    WaitingLength --> LengthComplete: Received 4 bytes
+    LengthComplete: Buffer: [0x00, 0x00, 0x00, 0x04]<br/>Validate length ✓
+    LengthComplete --> WaitingPayload: Length valid
+    LengthComplete --> [*]: Length invalid (error)
+    WaitingPayload: Need 4 more bytes<br/>for payload
+    WaitingPayload --> FrameComplete: Received all bytes
+    FrameComplete: Extract payload<br/>[0x01, 0x02, 0x03, 0x04]
+    FrameComplete --> [*]: Return payload
+    FrameComplete --> WaitingLength: More frames possible
 ```
 
 ### Multiple Frames
 
 When multiple frames are concatenated:
 
-```
-┌─────────────────────────────────────────────────────────┐
-│        Concatenated Frames in Stream                    │
-├─────────────────────────────────────────────────────────┤
-│                                                         │
-│  Frame 1: Length=4, Payload=[0x01, 0x02, 0x03, 0x04]    │
-│  Frame 2: Length=2, Payload=[0xAA, 0xBB]                │
-│                                                         │
-│  Stream Layout:                                         │
-│    ┌──────┐  ┌──────────┐  ┌──────┐  ┌────────┐         │
-│    │ 0x00 │  │ 0x01 0x02│  │ 0x00 │  │ 0xAA   │         │
-│    │ 0x00 │  │ 0x03 0x04│  │ 0x00 │  │ 0xBB   │         │
-│    │ 0x00 │   __________   │ 0x02 │   ________          │
-│    │ 0x04 │                └──────┘                     │
-│    └──────┘                                             │
-│    Frame 1                  Frame 2                     │
-│                                                         │
-│  Parser extracts frames sequentially:                   │
-│    1. nextFrame() → Frame 1 payload                     │
-│    2. nextFrame() → Frame 2 payload                     │
-│    3. nextFrame() → nil (no more frames)                │
-│                                                         │
-└─────────────────────────────────────────────────────────┘
+```mermaid
+graph LR
+    subgraph Stream["Concatenated Frames in Stream"]
+        F1Len[Frame 1 Length<br/>0x00, 0x00, 0x00, 0x04]
+        F1Payload[Frame 1 Payload<br/>0x01, 0x02, 0x03, 0x04]
+        F2Len[Frame 2 Length<br/>0x00, 0x00, 0x00, 0x02]
+        F2Payload[Frame 2 Payload<br/>0xAA, 0xBB]
+        
+        F1Len --> F1Payload
+        F1Payload --> F2Len
+        F2Len --> F2Payload
+    end
+    
+    subgraph Extraction["Parser Extraction"]
+        E1[nextFrame → Frame 1 payload]
+        E2[nextFrame → Frame 2 payload]
+        E3[nextFrame → nil]
+        E1 --> E2
+        E2 --> E3
+    end
+    
+    Stream --> Extraction
+    
+    style Stream fill:#e1f5ff
+    style Extraction fill:#e8f5e9
 ```
 
 ---
