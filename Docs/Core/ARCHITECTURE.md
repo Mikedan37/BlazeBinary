@@ -392,9 +392,9 @@ for item in array {
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
-- [Encoding Model](ENCODING_MODEL.md)
-- [Frame Protocol](FRAME_PROTOCOL.md)
-- [Threat Model](THREAT_MODEL.md)
-- [Cross-Language Decoder](CROSS_LANGUAGE_DECODER.md)
+- [Specification](SPECIFICATION_v1.3.md) - Protocol v1.3 specification (FROZEN)
+- [Encoding Model](ENCODING_MODEL.md) - Type system and encoding details
+- [Frame Protocol](FRAME_PROTOCOL.md) - Frame format and protocol
+- [Threat Model](../Security/THREAT_MODEL.md) - Security threat model
+- [Cross-Language Decoder](CROSS_LANGUAGE_DECODER.md) - Cross-language implementation guide
 
