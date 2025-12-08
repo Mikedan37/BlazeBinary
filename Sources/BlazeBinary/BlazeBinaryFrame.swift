@@ -291,6 +291,10 @@ public class BlazeFrameParser {
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
                 // Read potential payload length (bytes 2-5)
                 if buffer.count >= 6 {
+                    // Explicit range validation before subdata
+                    guard 2 < 6 && 6 <= buffer.count else {
+                        return nil // Invalid range
+                    }
                     let lengthBytes = buffer.subdata(in: 2..<6)
                     let potentialLength = lengthBytes.withUnsafeBytes { bytes in
                         guard bytes.count >= 4 else {
@@ -346,6 +350,10 @@ public class BlazeFrameParser {
             guard buffer.count >= 6 else {
                 return nil // Need more data
             }
+            // Explicit range validation before subdata
+            guard 2 < 6 && 6 <= buffer.count else {
+                throw BlazeBinaryError.decodeFailed("Invalid range for length bytes: 2..<6, buffer.count=\(buffer.count)")
+            }
             let lengthBytes = buffer.subdata(in: 2..<6)
             let payloadLength = lengthBytes.withUnsafeBytes { bytes in
                 guard bytes.count >= 4 else {
@@ -390,6 +398,9 @@ public class BlazeFrameParser {
             guard payloadEndIndex <= buffer.count else {
                 throw BlazeBinaryError.decodeFailed("Payload end index out of bounds: \(payloadEndIndex) > \(buffer.count)")
             }
+            guard payloadStartIndex >= 0 && payloadStartIndex < buffer.count else {
+                throw BlazeBinaryError.decodeFailed("Payload start index out of bounds: \(payloadStartIndex) (buffer.count=\(buffer.count))")
+            }
             
             var payload = buffer.subdata(in: payloadStartIndex..<payloadEndIndex)
             
@@ -427,9 +438,15 @@ public class BlazeFrameParser {
                     throw BlazeBinaryError.decodeFailed("Encrypted frame too small: \(payload.count) bytes (minimum 29)")
                 }
                 
-                // Safe to access payload[0] now - we've verified payload is not empty and has at least 29 bytes
-                guard payload[0] == SecureFrameType.encrypted.rawValue else {
-                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
+                // Safe access using withUnsafeBytes
+                let payloadFrameType = payload.withUnsafeBytes { bytes -> UInt8 in
+                    guard bytes.count >= 1 else {
+                        return 0xFF // Invalid sentinel
+                    }
+                    return bytes[0]
+                }
+                guard payloadFrameType == SecureFrameType.encrypted.rawValue else {
+                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch: expected \(SecureFrameType.encrypted.rawValue), got \(payloadFrameType)")
                 }
                 
                 if var session = secureSession {
@@ -445,6 +462,10 @@ public class BlazeFrameParser {
                     // Validate payload has enough data for subdata
                     guard payload.count > 1 else {
                         throw BlazeBinaryError.decodeFailed("Encrypted payload too small for subdata extraction")
+                    }
+                    // Explicit range validation before subdata
+                    guard 1 < payload.count && 1 >= 0 else {
+                        throw BlazeBinaryError.decodeFailed("Invalid range for encrypted data: 1..<\(payload.count)")
                     }
                     let encryptedData = payload.subdata(in: 1..<payload.count)
                     // Validate buffer has enough data before removing
@@ -497,6 +518,9 @@ public class BlazeFrameParser {
             let payloadEnd = 4 + lengthInt
             guard payloadStart < payloadEnd && payloadEnd <= buffer.count else {
                 throw BlazeBinaryError.decodeFailed("Invalid payload range: start=\(payloadStart), end=\(payloadEnd), buffer.count=\(buffer.count)")
+            }
+            guard payloadStart >= 0 && payloadStart < buffer.count else {
+                throw BlazeBinaryError.decodeFailed("Payload start index out of bounds: \(payloadStart) (buffer.count=\(buffer.count))")
             }
             let payload = buffer.subdata(in: payloadStart..<payloadEnd)
             
