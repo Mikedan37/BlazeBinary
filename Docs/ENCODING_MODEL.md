@@ -98,45 +98,88 @@ Optionals use bool flag + value:
 
 ### Pattern 1: Primitive Field
 
+```mermaid
+graph LR
+    A[Int = 42] --> B[Zigzag Encode]
+    B --> C[Varint Encode]
+    C --> D[0x54<br/>1 byte]
+    
+    style A fill:#e1f5ff
+    style D fill:#e8f5e9
 ```
-Field: Int = 42
-Encoding: [0x54]  (zigzag + varint, 1 byte)
-```
+
+**Encoding**: `[0x54]` (zigzag + varint, 1 byte)
 
 ### Pattern 2: String Field
 
+```mermaid
+graph LR
+    A[String = Hello] --> B[UTF-8 Encode]
+    B --> C[Varint Length Prefix]
+    C --> D[0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F<br/>6 bytes]
+    
+    style A fill:#e1f5ff
+    style D fill:#e8f5e9
 ```
-Field: String = "Hello"
-Encoding: [0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F]  (length + UTF-8, 6 bytes)
-```
+
+**Encoding**: `[0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F]` (length + UTF-8, 6 bytes)
 
 ### Pattern 3: Array Field
 
+```mermaid
+graph TD
+    A[Array: [1, 2, 3]] --> B[Varint Count: 3]
+    B --> C[Encode Item 1: 0x02]
+    B --> D[Encode Item 2: 0x04]
+    B --> E[Encode Item 3: 0x06]
+    C --> F[0x03, 0x02, 0x04, 0x06<br/>4 bytes]
+    D --> F
+    E --> F
+    
+    style A fill:#e1f5ff
+    style F fill:#e8f5e9
 ```
-Field: [Int] = [1, 2, 3]
-Encoding: [0x03, 0x02, 0x04, 0x06]  (count + items, 4 bytes)
-```
+
+**Encoding**: `[0x03, 0x02, 0x04, 0x06]` (count + items, 4 bytes)
 
 ### Pattern 4: Nested Struct
 
+```mermaid
+graph TD
+    A[Person: name=Alice, age=30] --> B[Encode name field]
+    A --> C[Encode age field]
+    B --> D[0x05, 0x41, 0x6C, 0x69, 0x63, 0x65]
+    C --> E[0x1E]
+    D --> F[0x05, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x1E<br/>7 bytes]
+    E --> F
+    
+    style A fill:#e1f5ff
+    style F fill:#e8f5e9
 ```
-Field: Person(name: "Alice", age: 30)
-Encoding: [0x05, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x1E]  (name + age, 7 bytes)
-```
+
+**Encoding**: `[0x05, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x1E]` (name + age, 7 bytes)
 
 ## Record Encoding
 
 A record is a sequence of encoded fields:
 
+```mermaid
+graph LR
+    A[Record] --> B[Field 1]
+    B --> C[Field 2]
+    C --> D[Field 3]
+    D --> E[...]
+    E --> F[Field N]
+    F --> G[Binary Data]
+    
+    style A fill:#e1f5ff
+    style G fill:#e8f5e9
 ```
-Record = Field1 + Field2 + ... + FieldN
-```
 
-**Order Matters**: Fields must be encoded/decoded in the same order
-
-**No Separators**: Fields are concatenated without delimiters
-
-**No Metadata**: No field names, types, or schema information
+**Key Properties**:
+- **Order Matters**: Fields must be encoded/decoded in the same order
+- **No Separators**: Fields are concatenated without delimiters
+- **No Metadata**: No field names, types, or schema information
 
 ## Size Comparison
 

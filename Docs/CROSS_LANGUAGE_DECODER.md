@@ -61,17 +61,22 @@ graph TD
 Varints use LEB128 (Little-Endian Base 128) encoding:
 
 **Algorithm**:
-```
-result = 0
-shift = 0
-while true:
-    byte = read_byte()
-    result |= (byte & 0x7F) << shift
-    if (byte & 0x80) == 0:
-        break
-    shift += 7
-    if shift >= 64:
-        error("Varint too large")
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Init[result = 0<br/>shift = 0]
+    Init --> Read[Read byte]
+    Read --> Extract[result |= byte & 0x7F << shift]
+    Extract --> Check{Continuation bit<br/>byte & 0x80 == 0?}
+    Check -->|Yes| Return[Return result]
+    Check -->|No| Shift[shift += 7]
+    Shift --> Overflow{shift >= 64?}
+    Overflow -->|Yes| Error[Error: Varint too large]
+    Overflow -->|No| Read
+    
+    style Start fill:#e1f5ff
+    style Return fill:#e8f5e9
+    style Error fill:#ffebee
 ```
 
 **Example**: `[0xE5, 0x8E, 0x26]` → `624485`
@@ -81,14 +86,20 @@ while true:
 Zigzag encoding maps signed integers to unsigned integers:
 
 **Algorithm**:
-```
-zigzag = decode_varint()
-if zigzag == UINT64_MAX:
-    return INT64_MIN
-if (zigzag & 1) == 1:
-    return -((zigzag + 1) >> 1)
-else:
-    return zigzag >> 1
+
+```mermaid
+flowchart TD
+    Start([Start]) --> Decode[zigzag = decode_varint]
+    Decode --> CheckMax{zigzag ==<br/>UINT64_MAX?}
+    CheckMax -->|Yes| ReturnMin[Return INT64_MIN]
+    CheckMax -->|No| CheckOdd{zigzag & 1<br/>== 1?}
+    CheckOdd -->|Yes| Neg[Return -zigzag + 1 >> 1]
+    CheckOdd -->|No| Pos[Return zigzag >> 1]
+    
+    style Start fill:#e1f5ff
+    style ReturnMin fill:#e8f5e9
+    style Neg fill:#e8f5e9
+    style Pos fill:#e8f5e9
 ```
 
 **Example**: `1` → `-1`, `2` → `1`, `3` → `-2`

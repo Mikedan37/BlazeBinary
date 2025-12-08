@@ -25,6 +25,27 @@ BlazeBinary is a **binary codec library** that provides:
 
 **Attack**: Sending intentionally malformed binary data to cause crashes or undefined behavior.
 
+```mermaid
+graph TD
+    A[Malformed Record Attack] --> B[Invalid Varint]
+    A --> C[Truncated Length]
+    A --> D[Invalid UTF-8]
+    A --> E[Invalid Frame Header]
+    
+    B --> F[Bounds Check]
+    C --> F
+    D --> F
+    E --> F
+    
+    F --> G{Valid?}
+    G -->|No| H[BlazeBinaryError]
+    G -->|Yes| I[Process]
+    
+    style A fill:#ffebee
+    style H fill:#e8f5e9
+    style I fill:#e1f5ff
+```
+
 **Vectors**:
 - Invalid varint encodings (too many bytes, overflow)
 - Truncated length prefixes
@@ -55,6 +76,23 @@ BlazeBinary is a **binary codec library** that provides:
 ### 3. Oversized Buffers
 
 **Attack**: Sending extremely large but valid payloads to exhaust memory.
+
+```mermaid
+graph LR
+    A[Oversized Payload] --> B{Size Check}
+    B -->|Frame > 5MB| C[Reject: OversizedFrame]
+    B -->|Buffer > 10MB| D[Reject: Buffer Limit]
+    B -->|Field > 10MB| E[Reject: Field Limit]
+    B -->|Within Limits| F[Process]
+    
+    C --> G[BlazeBinaryError]
+    D --> G
+    E --> G
+    
+    style A fill:#ffebee
+    style G fill:#e8f5e9
+    style F fill:#e1f5ff
+```
 
 **Vectors**:
 - Large frame payloads (up to 5MB limit)

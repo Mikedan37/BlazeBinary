@@ -132,25 +132,40 @@ Varints use LEB128 (Little-Endian Base 128) encoding.
 
 #### 4.1.4. Examples
 
+```mermaid
+graph TD
+    A[Varint Encoding Examples] --> B[Value: 0]
+    A --> C[Value: 127]
+    A --> D[Value: 128]
+    A --> E[Value: 300]
+    
+    B --> B1[Encoded: 0x00<br/>1 byte]
+    C --> C1[Encoded: 0x7F<br/>1 byte]
+    D --> D1[Encoded: 0x80, 0x01<br/>2 bytes]
+    E --> E1[Encoded: 0xAC, 0x02<br/>2 bytes]
+    
+    D1 --> D2[Byte 0: continuation=1, data=0<br/>Byte 1: continuation=0, data=1<br/>Result: 0 + 1<<7 = 128]
+    E1 --> E2[Byte 0: data=44<br/>Byte 1: data=2<br/>Result: 44 + 2<<7 = 300]
+    
+    style A fill:#e1f5ff
+    style B1 fill:#e8f5e9
+    style C1 fill:#e8f5e9
+    style D1 fill:#e8f5e9
+    style E1 fill:#e8f5e9
 ```
-Value: 0
-Encoded: [0x00]
 
-Value: 127
-Encoded: [0x7F]
+**Detailed Breakdown**:
 
-Value: 128
-Encoded: [0x80, 0x01]
-  Byte 0: 0x80 = 0b10000000 (continuation=1, data=0)
-  Byte 1: 0x01 = 0b00000001 (continuation=0, data=1)
-  Result: 0 + (1 << 7) = 128
-
-Value: 300
-Encoded: [0xAC, 0x02]
-  Byte 0: 0xAC & 0x7F = 44
-  Byte 1: 0x02 = 2
-  Result: 44 + (2 << 7) = 300
-```
+- **Value: 0** → `[0x00]` (1 byte)
+- **Value: 127** → `[0x7F]` (1 byte)
+- **Value: 128** → `[0x80, 0x01]` (2 bytes)
+  - Byte 0: `0x80 = 0b10000000` (continuation=1, data=0)
+  - Byte 1: `0x01 = 0b00000001` (continuation=0, data=1)
+  - Result: `0 + (1 << 7) = 128`
+- **Value: 300** → `[0xAC, 0x02]` (2 bytes)
+  - Byte 0: `0xAC & 0x7F = 44`
+  - Byte 1: `0x02 = 2`
+  - Result: `44 + (2 << 7) = 300`
 
 ### 4.2. Zigzag Encoding (Signed Integers)
 
@@ -158,9 +173,21 @@ Signed integers use zigzag encoding before varint encoding.
 
 #### 4.2.1. Encoding Formula
 
+```mermaid
+flowchart LR
+    A[Signed Integer] --> B[Left Shift: value << 1]
+    A --> C[Right Shift: value >> 63]
+    B --> D[XOR Operation]
+    C --> D
+    D --> E[Zigzag Value]
+    E --> F[Varint Encode]
+    
+    style A fill:#e1f5ff
+    style E fill:#fff4e1
+    style F fill:#e8f5e9
 ```
-zigzag = (value << 1) ^ (value >> 63)
-```
+
+**Formula**: `zigzag = (value << 1) ^ (value >> 63)`
 
 Where:
 - `<<`: Left shift
@@ -169,9 +196,21 @@ Where:
 
 #### 4.2.2. Decoding Formula
 
+```mermaid
+flowchart LR
+    A[Zigzag Value] --> B[Right Shift: zigzag >> 1]
+    A --> C[Check LSB: zigzag & 1]
+    C --> D{Negative?}
+    D -->|Yes| E[Negate: -zigzag + 1 >> 1]
+    D -->|No| F[Positive: zigzag >> 1]
+    E --> G[Signed Integer]
+    F --> G
+    
+    style A fill:#e1f5ff
+    style G fill:#e8f5e9
 ```
-value = (zigzag >> 1) ^ (-(zigzag & 1))
-```
+
+**Formula**: `value = (zigzag >> 1) ^ (-(zigzag & 1))`
 
 #### 4.2.3. Mapping Table
 
