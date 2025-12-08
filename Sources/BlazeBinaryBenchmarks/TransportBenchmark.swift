@@ -6,8 +6,12 @@
 //
 
 import Foundation
+#if canImport(Network)
 import Network
+#endif
 import BlazeBinary
+
+#if canImport(Network)
 
 // MARK: - Transport Benchmark Results
 
@@ -411,3 +415,4 @@ class TransportBenchmarkRunner {
     }
 }
 
+#endif // canImport(Network)

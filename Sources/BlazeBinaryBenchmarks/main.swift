@@ -7,7 +7,9 @@
 //
 
 import Foundation
+#if canImport(Network)
 import Network
+#endif
 import BlazeBinary
 import Crypto
 
@@ -253,6 +255,7 @@ encoderLarge.encode(Int.max)
 
 // MARK: - Transport Benchmarks (TCP vs UDP)
 
+#if canImport(Network)
 print("\n=== Transport Benchmarks (TCP vs UDP) ===")
 print("Note: These benchmarks require network setup and may take longer...\n")
 
@@ -302,6 +305,11 @@ do {
     print("  Transport benchmark failed: \(error)")
     print("  (This is expected if network permissions are not available)\n")
 }
+#else
+print("\n=== Transport Benchmarks (TCP vs UDP) ===")
+print("Note: Transport benchmarks require Network framework (macOS/iOS only)")
+print("      Skipping on this platform.\n")
+#endif
 let dataLarge = encoderLarge.encodedData()
 
 _ = try runner.runBenchmark(name: "Varint decode (small)", iterations: 100000) {
