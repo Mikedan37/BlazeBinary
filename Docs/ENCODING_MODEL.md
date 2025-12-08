@@ -104,8 +104,8 @@ graph LR
     B --> C[Varint Encode]
     C --> D[0x54<br/>1 byte]
     
-    style A fill:#e1f5ff
-    style D fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style D fill:#27ae60,color:#ffffff
 ```
 
 **Encoding**: `[0x54]` (zigzag + varint, 1 byte)
@@ -118,8 +118,8 @@ graph LR
     B --> C[Varint Length Prefix]
     C --> D[0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F<br/>6 bytes]
     
-    style A fill:#e1f5ff
-    style D fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style D fill:#27ae60,color:#ffffff
 ```
 
 **Encoding**: `[0x05, 0x48, 0x65, 0x6C, 0x6C, 0x6F]` (length + UTF-8, 6 bytes)
@@ -136,8 +136,8 @@ graph TD
     D --> F
     E --> F
     
-    style A fill:#e1f5ff
-    style F fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style F fill:#27ae60,color:#ffffff
 ```
 
 **Encoding**: `[0x03, 0x02, 0x04, 0x06]` (count + items, 4 bytes)
@@ -153,8 +153,8 @@ graph TD
     D --> F[0x05, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x1E<br/>7 bytes]
     E --> F
     
-    style A fill:#e1f5ff
-    style F fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style F fill:#27ae60,color:#ffffff
 ```
 
 **Encoding**: `[0x05, 0x41, 0x6C, 0x69, 0x63, 0x65, 0x1E]` (name + age, 7 bytes)
@@ -172,8 +172,8 @@ graph LR
     E --> F[Field N]
     F --> G[Binary Data]
     
-    style A fill:#e1f5ff
-    style G fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style G fill:#27ae60,color:#ffffff
 ```
 
 **Key Properties**:

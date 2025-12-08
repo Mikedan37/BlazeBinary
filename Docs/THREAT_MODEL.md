@@ -41,9 +41,9 @@ graph TD
     G -->|No| H[BlazeBinaryError]
     G -->|Yes| I[Process]
     
-    style A fill:#ffebee
-    style H fill:#e8f5e9
-    style I fill:#e1f5ff
+    style A fill:#e74c3c,color:#ffffff
+    style H fill:#27ae60,color:#ffffff
+    style I fill:#2c3e50,color:#ffffff
 ```
 
 **Vectors**:
@@ -89,9 +89,9 @@ graph LR
     D --> G
     E --> G
     
-    style A fill:#ffebee
-    style G fill:#e8f5e9
-    style F fill:#e1f5ff
+    style A fill:#e74c3c,color:#ffffff
+    style G fill:#27ae60,color:#ffffff
+    style F fill:#2c3e50,color:#ffffff
 ```
 
 **Vectors**:

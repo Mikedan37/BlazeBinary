@@ -17,11 +17,11 @@ graph TD
     C --> D[Frame Layer<br/>FrameEncoder, FrameParser]
     D --> E[Transport Layer<br/>Network, IPC, Storage]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#e8f5e9
-    style D fill:#fce4ec
-    style E fill:#f3e5f5
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#27ae60,color:#ffffff
+    style D fill:#6c5ce7,color:#ffffff
+    style E fill:#5f4b8b,color:#ffffff
 ```
 
 ## Component Breakdown
@@ -44,9 +44,9 @@ graph TD
 graph LR
     A[Swift Value] --> B[Encoder] --> C[Binary Data]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#27ae60,color:#ffffff
 ```
 
 ### 2. Decoder Layer
@@ -67,9 +67,9 @@ graph LR
 graph LR
     A[Binary Data] --> B[Decoder] --> C[Swift Value]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#27ae60,color:#ffffff
 ```
 
 ### 3. Internal Utilities
@@ -106,12 +106,12 @@ graph LR
     A[Binary Data] --> B[Frame Encoder] --> C[Framed Data]
     D[Framed Data] --> E[Frame Parser] --> F[Binary Data]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#e8f5e9
-    style D fill:#e1f5ff
-    style E fill:#fff4e1
-    style F fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#27ae60,color:#ffffff
+    style D fill:#2c3e50,color:#ffffff
+    style E fill:#34495e,color:#ffffff
+    style F fill:#27ae60,color:#ffffff
 ```
 
 ## Module Interactions

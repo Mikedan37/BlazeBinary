@@ -78,9 +78,9 @@ graph LR
     B --> B1[Implicit]
     C --> C1[Variable Length]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
 ```
 
 **Type Tag**: Implicit from encoding method (no explicit tag byte)
@@ -147,11 +147,11 @@ graph TD
     D1 --> D2[Byte 0: continuation=1, data=0<br/>Byte 1: continuation=0, data=1<br/>Result: 0 + 1<<7 = 128]
     E1 --> E2[Byte 0: data=44<br/>Byte 1: data=2<br/>Result: 44 + 2<<7 = 300]
     
-    style A fill:#e1f5ff
-    style B1 fill:#e8f5e9
-    style C1 fill:#e8f5e9
-    style D1 fill:#e8f5e9
-    style E1 fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style B1 fill:#27ae60,color:#ffffff
+    style C1 fill:#27ae60,color:#ffffff
+    style D1 fill:#27ae60,color:#ffffff
+    style E1 fill:#27ae60,color:#ffffff
 ```
 
 **Detailed Breakdown**:
@@ -182,9 +182,9 @@ flowchart LR
     D --> E[Zigzag Value]
     E --> F[Varint Encode]
     
-    style A fill:#e1f5ff
-    style E fill:#fff4e1
-    style F fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style E fill:#34495e,color:#ffffff
+    style F fill:#27ae60,color:#ffffff
 ```
 
 **Formula**: `zigzag = (value << 1) ^ (value >> 63)`
@@ -206,8 +206,8 @@ flowchart LR
     E --> G[Signed Integer]
     F --> G
     
-    style A fill:#e1f5ff
-    style G fill:#e8f5e9
+    style A fill:#2c3e50,color:#ffffff
+    style G fill:#27ae60,color:#ffffff
 ```
 
 **Formula**: `value = (zigzag >> 1) ^ (-(zigzag & 1))`
@@ -353,10 +353,10 @@ graph LR
     C --> C1[4 bytes, big-endian]
     D --> D1[Variable length]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
+    style D fill:#34495e,color:#ffffff
 ```
 
 ### 7.2. Frame Types

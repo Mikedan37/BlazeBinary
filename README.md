@@ -148,13 +148,13 @@ graph TB
         FramePars -->|nextFrame| BinaryStream
     end
     
-    style Module fill:#e1f5ff,stroke:#01579b,stroke-width:2px
-    style Encoder fill:#fff4e1
-    style Decoder fill:#fff4e1
-    style FrameEnc fill:#e8f5e9
-    style FramePars fill:#e8f5e9
-    style BinaryStream fill:#fce4ec
-    style FramedData fill:#f3e5f5
+    style Module fill:#2c3e50,stroke:#0d7377,stroke-width:2px,color:#ffffff
+    style Encoder fill:#34495e,color:#ffffff
+    style Decoder fill:#34495e,color:#ffffff
+    style FrameEnc fill:#27ae60,color:#ffffff
+    style FramePars fill:#27ae60,color:#ffffff
+    style BinaryStream fill:#6c5ce7,color:#ffffff
+    style FramedData fill:#5f4b8b,color:#ffffff
 ```
 
 ### Protocol Hierarchy
@@ -171,10 +171,10 @@ graph TD
     UserTypes -->|Implement| Encodable
     UserTypes -->|Implement| Decodable
     
-    style Codable fill:#e1f5ff
-    style Encodable fill:#fff4e1
-    style Decodable fill:#fff4e1
-    style UserTypes fill:#e8f5e9
+    style Codable fill:#2c3e50,color:#ffffff
+    style Encodable fill:#34495e,color:#ffffff
+    style Decodable fill:#34495e,color:#ffffff
+    style UserTypes fill:#27ae60,color:#ffffff
 ```
 
 ### Data Flow
@@ -194,15 +194,15 @@ graph LR
         Decoder --> SwiftVal2[Swift Value]
     end
     
-    style SwiftVal1 fill:#e1f5ff
-    style SwiftVal2 fill:#e1f5ff
-    style Encoder1 fill:#fff4e1
-    style Decoder fill:#fff4e1
-    style Binary1 fill:#e8f5e9
-    style Binary2 fill:#e8f5e9
-    style Frame1 fill:#fce4ec
-    style Frame2 fill:#fce4ec
-    style Parser fill:#f3e5f5
+    style SwiftVal1 fill:#2c3e50,color:#ffffff
+    style SwiftVal2 fill:#2c3e50,color:#ffffff
+    style Encoder1 fill:#34495e,color:#ffffff
+    style Decoder fill:#34495e,color:#ffffff
+    style Binary1 fill:#27ae60,color:#ffffff
+    style Binary2 fill:#27ae60,color:#ffffff
+    style Frame1 fill:#6c5ce7,color:#ffffff
+    style Frame2 fill:#6c5ce7,color:#ffffff
+    style Parser fill:#5f4b8b,color:#ffffff
 ```
 
 ---
@@ -291,14 +291,14 @@ Varints use LEB128 (Little-Endian Base 128) encoding. Each byte contains 7 bits 
 flowchart TD
     Start([Value: 300]) --> Step1[Step 1: Extract lower 7 bits]
     Step1 --> Calc1["300 & 0x7F = 0x2C (44)<br/>300 >> 7 = 2"]
-    Calc1 --> Byte1[Byte 0: 0xAC<br/>0x2C | 0x80]
+        Calc1 --> Byte1["Byte 0: 0xAC<br/>0x2C OR 0x80"]
     Byte1 --> Step2[Step 2: Process remaining]
     Step2 --> Calc2["2 & 0x7F = 0x02<br/>2 >> 7 = 0 (done)"]
     Calc2 --> Byte2[Byte 1: 0x02]
-    Byte2 --> Result[Result: [0xAC, 0x02]]
+        Byte2 --> Result["Result: 0xAC, 0x02"]
     
-    style Start fill:#e1f5ff
-    style Result fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style Result fill:#27ae60,color:#ffffff
 ```
 
 **Visual Representation**:
@@ -314,10 +314,10 @@ graph TD
         Byte1 --> Decode
     end
     
-    style Varint fill:#e1f5ff
-    style Byte0 fill:#fff4e1
-    style Byte1 fill:#fff4e1
-    style Decode fill:#e8f5e9
+    style Varint fill:#2c3e50,color:#ffffff
+    style Byte0 fill:#34495e,color:#ffffff
+    style Byte1 fill:#34495e,color:#ffffff
+    style Decode fill:#27ae60,color:#ffffff
 ```
 
 **Signed Integer Encoding (Zigzag)**:
@@ -327,14 +327,14 @@ Signed integers use zigzag encoding before varint encoding:
 ```mermaid
 graph LR
     subgraph Examples["Zigzag Examples"]
-        E1["0 → 0 → [0x00]"]
-        E2["1 → 2 → [0x02]"]
-        E3["-1 → 1 → [0x01]"]
-        E4["2 → 4 → [0x04]"]
-        E5["-2 → 3 → [0x03]"]
+        E1["0 → 0 → 0x00"]
+        E2["1 → 2 → 0x02"]
+        E3["-1 → 1 → 0x01"]
+        E4["2 → 4 → 0x04"]
+        E5["-2 → 3 → 0x03"]
     end
     
-    style Examples fill:#e1f5ff
+    style Examples fill:#2c3e50,color:#ffffff
 ```
 
 **Visual Representation**:
@@ -345,11 +345,11 @@ flowchart TD
     Zigzag --> Calc1["-100 << 1 = -200<br/>-100 >> 63 = -1<br/>-200 ^ -1 = 199"]
     Calc1 --> Varint[Step 2: Varint Encode 199]
     Varint --> Calc2["199 & 0x7F = 0x47<br/>199 >> 7 = 2"]
-    Calc2 --> Bytes["Byte 0: 0xC7 (0x47 | 0x80)<br/>Byte 1: 0x02"]
-    Bytes --> Result[Result: [0xC7, 0x02]]
+    Calc2 --> Bytes["Byte 0: 0xC7 (0x47 OR 0x80)<br/>Byte 1: 0x02"]
+    Bytes --> Result["Result: 0xC7, 0x02"]
     
-    style Start fill:#e1f5ff
-    style Result fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style Result fill:#27ae60,color:#ffffff
 ```
 
 ### Fixed-Width Little-Endian Encoding
@@ -364,11 +364,11 @@ graph LR
         B2 --> B3[Byte 3: 0x12<br/>MSB]
     end
     
-    Layout["Layout: [0x78, 0x56, 0x34, 0x12]"]
+    Layout["Layout: 0x78, 0x56, 0x34, 0x12"]
     B3 --> Layout
     
-    style UInt32 fill:#e1f5ff
-    style Layout fill:#e8f5e9
+    style UInt32 fill:#2c3e50,color:#ffffff
+    style Layout fill:#27ae60,color:#ffffff
 ```
 
 **UInt64 Format**:
@@ -385,11 +385,11 @@ graph LR
         B6 --> B7[Byte 7: 0x01<br/>MSB]
     end
     
-    Layout["Layout: [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01]"]
+    Layout["Layout: 0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01"]
     B7 --> Layout
     
-    style UInt64 fill:#e1f5ff
-    style Layout fill:#e8f5e9
+    style UInt64 fill:#2c3e50,color:#ffffff
+    style Layout fill:#27ae60,color:#ffffff
 ```
 
 **Bool Format**:
@@ -400,10 +400,10 @@ graph LR
     False[false] --> Enc2[Encodes to: 0x00]
     Invalid[Invalid values<br/>not 0x00 or 0x01] --> Error[Decode Error]
     
-    style True fill:#e8f5e9
-    style False fill:#e8f5e9
-    style Invalid fill:#ffebee
-    style Error fill:#ffebee
+    style True fill:#27ae60,color:#ffffff
+    style False fill:#27ae60,color:#ffffff
+    style Invalid fill:#e74c3c,color:#ffffff
+    style Error fill:#e74c3c,color:#ffffff
 ```
 
 ### Length-Prefixed Encoding
@@ -412,19 +412,19 @@ graph LR
 
 ```mermaid
 graph LR
-    subgraph Data["Data: [0x01, 0x02, 0x03]"]
-        Length[Varint Length<br/>[0x03]]
-        Payload[Payload Bytes<br/>[0x01, 0x02, 0x03]]
+    subgraph Data["Data: 0x01, 0x02, 0x03"]
+        Length["Varint Length<br/>0x03"]
+        Payload["Payload Bytes<br/>0x01, 0x02, 0x03"]
         Length --> Payload
     end
     
     Total["Total: 4 bytes"]
     Payload --> Total
     
-    style Data fill:#e1f5ff
-    style Length fill:#fff4e1
-    style Payload fill:#e8f5e9
-    style Total fill:#f3e5f5
+    style Data fill:#2c3e50,color:#ffffff
+    style Length fill:#34495e,color:#ffffff
+    style Payload fill:#27ae60,color:#ffffff
+    style Total fill:#5f4b8b,color:#ffffff
 ```
 
 **String Format**:
@@ -432,12 +432,12 @@ graph LR
 ```mermaid
 flowchart TD
     Start([String: Hello]) --> UTF8[Step 1: Convert to UTF-8]
-    UTF8 --> Bytes["[0x48, 0x65, 0x6C, 0x6C, 0x6F]"]
+    UTF8 --> Bytes["0x48, 0x65, 0x6C, 0x6C, 0x6F"]
     Bytes --> Encode[Step 2: Encode with length prefix]
-    Encode --> Result["Varint(5): [0x05]<br/>UTF-8: [0x48, 0x65, 0x6C, 0x6C, 0x6F]<br/>Total: 6 bytes"]
+    Encode --> Result["Varint(5): 0x05<br/>UTF-8: 0x48, 0x65, 0x6C, 0x6C, 0x6F<br/>Total: 6 bytes"]
     
-    style Start fill:#e1f5ff
-    style Result fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style Result fill:#27ae60,color:#ffffff
 ```
 
 ### Array Encoding
@@ -447,7 +447,7 @@ flowchart TD
 ```mermaid
 graph LR
     subgraph Array["Array: [Item1, Item2, Item3]"]
-        Count[Varint Count<br/>[0x03]]
+        Count["Varint Count<br/>0x03"]
         Item1[Item1]
         Item2[Item2]
         Item3[Item3]
@@ -459,27 +459,27 @@ graph LR
     Note["Each item encoded according to<br/>BlazeBinaryEncodable implementation"]
     Item3 --> Note
     
-    style Array fill:#e1f5ff
-    style Count fill:#fff4e1
-    style Note fill:#f3e5f5
+    style Array fill:#2c3e50,color:#ffffff
+    style Count fill:#34495e,color:#ffffff
+    style Note fill:#5f4b8b,color:#ffffff
 ```
 
 **Example: Array of Strings**:
 
 ```mermaid
 flowchart TD
-    Start([Array: Hi, Bye]) --> Count[Count: [0x02]]
+    Start([Array: Hi, Bye]) --> Count["Count: 0x02"]
     Count --> Item0[Item 0: Hi]
     Count --> Item1[Item 1: Bye]
     
-    Item0 --> Enc0["Length: [0x02]<br/>UTF-8: [0x48, 0x69]"]
-    Item1 --> Enc1["Length: [0x03]<br/>UTF-8: [0x42, 0x79, 0x65]"]
+    Item0 --> Enc0["Length: 0x02<br/>UTF-8: 0x48, 0x69"]
+    Item1 --> Enc1["Length: 0x03<br/>UTF-8: 0x42, 0x79, 0x65"]
     
     Enc0 --> Total[Total: 1 + 1+2 + 1+3 = 8 bytes]
     Enc1 --> Total
     
-    style Start fill:#e1f5ff
-    style Total fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style Total fill:#27ae60,color:#ffffff
 ```
 
 ### Composite Type Encoding
@@ -504,12 +504,12 @@ flowchart TD
     Field2 --> Enc2["Varint Length: 4<br/>John UTF-8"]
     
     Enc2 --> Field3[Field 3: age Int]
-    Field3 --> Enc3["Varint: 25<br/>[0x19]"]
+    Field3 --> Enc3["Varint: 25<br/>0x19"]
     
     Enc3 --> Note[Decoding MUST follow<br/>the exact same order!]
     
-    style Start fill:#e1f5ff
-    style Note fill:#fff4e1
+    style Start fill:#2c3e50,color:#ffffff
+    style Note fill:#34495e,color:#ffffff
 ```
 
 ---
@@ -536,7 +536,7 @@ graph LR
         B2 --> LSB[Byte 3: LSB]
     end
     
-    Example["Example: Payload = 1000 (0x000003E8)<br/>Length: [0x00, 0x00, 0x03, 0xE8]<br/>Total: 4 + 1000 = 1004 bytes"]
+    Example["Example: Payload = 1000 (0x000003E8)<br/>Length: 0x00, 0x00, 0x03, 0xE8<br/>Total: 4 + 1000 = 1004 bytes"]
     
     Constraints["Constraints:<br/>- Max frame: 5 MB<br/>- Max buffer: 10 MB<br/>- Length > 0 and <= 5,242,880"]
     
@@ -544,10 +544,10 @@ graph LR
     Format --> Example
     Example --> Constraints
     
-    style Frame fill:#e1f5ff
-    style Format fill:#fff4e1
-    style Example fill:#e8f5e9
-    style Constraints fill:#fce4ec
+    style Frame fill:#2c3e50,color:#ffffff
+    style Format fill:#34495e,color:#ffffff
+    style Example fill:#27ae60,color:#ffffff
+    style Constraints fill:#6c5ce7,color:#ffffff
 ```
 
 ### Frame Encoding Example
@@ -557,12 +557,12 @@ flowchart TD
     Start([Payload: 0x01, 0x02, 0x03, 0x04<br/>4 bytes]) --> Step1[Step 1: Calculate length]
     Step1 --> Len["Length = 4"]
     Len --> Step2[Step 2: Convert to big-endian UInt32]
-    Step2 --> BE["4 = 0x00000004<br/>Big-endian: [0x00, 0x00, 0x00, 0x04]"]
+    Step2 --> BE["4 = 0x00000004<br/>Big-endian: 0x00, 0x00, 0x00, 0x04"]
     BE --> Step3[Step 3: Concatenate]
-    Step3 --> Result["Frame: [0x00, 0x00, 0x00, 0x04,<br/>        0x01, 0x02, 0x03, 0x04]<br/>Total: 8 bytes"]
+    Step3 --> Result["Frame: 0x00, 0x00, 0x00, 0x04,<br/>        0x01, 0x02, 0x03, 0x04<br/>Total: 8 bytes"]
     
-    style Start fill:#e1f5ff
-    style Result fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style Result fill:#27ae60,color:#ffffff
 ```
 
 ### Streaming Frame Parsing
@@ -572,16 +572,17 @@ The `BlazeFrameParser` handles incremental frame parsing for network streams:
 ```mermaid
 stateDiagram-v2
     [*] --> WaitingLength: Parser initialized
-    WaitingLength: Buffer: [0x00, 0x00]<br/>Need 4 bytes
     WaitingLength --> LengthComplete: Received 4 bytes
-    LengthComplete: Buffer: [0x00, 0x00, 0x00, 0x04]<br/>Validate length ✓
     LengthComplete --> WaitingPayload: Length valid
     LengthComplete --> [*]: Length invalid (error)
-    WaitingPayload: Need 4 more bytes<br/>for payload
     WaitingPayload --> FrameComplete: Received all bytes
-    FrameComplete: Extract payload<br/>[0x01, 0x02, 0x03, 0x04]
     FrameComplete --> [*]: Return payload
     FrameComplete --> WaitingLength: More frames possible
+    
+    WaitingLength: Waiting for length prefix (need 4 bytes)
+    LengthComplete: Length prefix received and validated
+    WaitingPayload: Waiting for payload bytes
+    FrameComplete: Complete frame extracted
 ```
 
 ### Multiple Frames
@@ -611,8 +612,8 @@ graph LR
     
     Stream --> Extraction
     
-    style Stream fill:#e1f5ff
-    style Extraction fill:#e8f5e9
+    style Stream fill:#2c3e50,color:#ffffff
+    style Extraction fill:#27ae60,color:#ffffff
 ```
 
 ---
@@ -624,10 +625,8 @@ graph LR
 ```swift
 import BlazeBinary
 
-// Create an encoder
 let encoder = BlazeBinaryEncoder()
 
-// Encode primitives
 encoder.encode(UInt32(42))
 encoder.encode(UInt64(123456789))
 encoder.encode(Int(-100))
@@ -635,17 +634,16 @@ encoder.encode(true)
 encoder.encode("Hello, World!")
 encoder.encode(Data([0x01, 0x02, 0x03]))
 
-// Get encoded data
 let data = encoder.encodedData()
 ```
 
 ### Basic Decoding
 
+> **Note:** Decode values in the same order as encoding.
+
 ```swift
-// Create a decoder
 let decoder = BlazeBinaryDecoder(data: data)
 
-// Decode in the same order as encoding
 let uint32 = try decoder.decodeUInt32()      // 42
 let uint64 = try decoder.decodeUInt64()      // 123456789
 let int = try decoder.decodeInt()            // -100
@@ -656,6 +654,8 @@ let data = try decoder.decodeData()          // Data([0x01, 0x02, 0x03])
 
 ### Custom Types
 
+> **Important:** Field encoding order must match decoding order exactly.
+
 ```swift
 struct Person: BlazeBinaryCodable {
     var id: UUID
@@ -664,7 +664,6 @@ struct Person: BlazeBinaryCodable {
     var active: Bool
     
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
-        // Order matters! This order must match init(from:)
         encoder.encode(id.uuidString)
         encoder.encode(name)
         encoder.encode(age)
@@ -672,7 +671,6 @@ struct Person: BlazeBinaryCodable {
     }
     
     init(from decoder: BlazeBinaryDecoder) throws {
-        // Must decode in the same order as encoding
         let idString = try decoder.decodeString()
         guard let uuid = UUID(uuidString: idString) else {
             throw BlazeBinaryError.decodeFailed("Invalid UUID")
@@ -683,15 +681,12 @@ struct Person: BlazeBinaryCodable {
         self.active = try decoder.decodeBool()
     }
 }
+```
 
-// Usage
-let person = Person(
-    id: UUID(),
-    name: "Alice",
-    age: 30,
-    active: true
-)
+**Usage:**
 
+```swift
+let person = Person(id: UUID(), name: "Alice", age: 30, active: true)
 let encoder = BlazeBinaryEncoder()
 try encoder.encode(person)
 let data = encoder.encodedData()
@@ -722,12 +717,10 @@ struct WorkPlan: BlazeBinaryCodable {
     var steps: [WorkStep]
     
     func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
-        // Encode array using encode(_ array:)
         try encoder.encode(steps)
     }
     
     init(from decoder: BlazeBinaryDecoder) throws {
-        // Decode array using decodeArray(_ type:)
         self.steps = try decoder.decodeArray(WorkStep.self)
     }
 }
@@ -735,37 +728,38 @@ struct WorkPlan: BlazeBinaryCodable {
 
 ### Frame Encoding (IPC/Sockets)
 
+For network protocols, wrap payloads in frames:
+
 ```swift
-// Encode a frame
 let payload = Data([0x01, 0x02, 0x03, 0x04])
 let frame = try BlazeFrameEncoder.encodeFrame(payload)
-
-// frame contains: [length_prefix (4 bytes), payload]
 ```
 
+> Frame format: `[4-byte length prefix (big-endian)] + [payload]`
+
 ### Frame Parsing (Streaming)
+
+Incremental parsing for network streams:
 
 ```swift
 let parser = BlazeFrameParser()
 
-// Append data as it arrives (e.g., from network)
 try parser.append(receivedData1)
 try parser.append(receivedData2)
 
-// Extract complete frames
 while let payload = try parser.nextFrame() {
-    // Process complete frame
     let decoder = BlazeBinaryDecoder(data: payload)
-    // ... decode your data
+    // Decode your message
 }
-
-// If nextFrame() returns nil, more data is needed
 ```
+
+> **Note:** `nextFrame()` returns `nil` when more data is needed.
 
 ### Complete Example: Network Protocol
 
+**Server side (encoding):**
+
 ```swift
-// Server side: Encoding and sending
 struct Message: BlazeBinaryCodable {
     var id: UUID
     var content: String
@@ -785,24 +779,22 @@ struct Message: BlazeBinaryCodable {
     }
 }
 
-// Encode message
 let message = Message(id: UUID(), content: "Hello!")
 let encoder = BlazeBinaryEncoder()
 try encoder.encode(message)
 let payload = encoder.encodedData()
-
-// Wrap in frame
 let frame = try BlazeFrameEncoder.encodeFrame(payload)
-// Send frame over network...
+sendToClient(frame)
+```
 
-// Client side: Receiving and decoding
+**Client side (decoding):**
+
+```swift
 let parser = BlazeFrameParser()
 
-// Receive data chunks
 try parser.append(receivedChunk1)
 try parser.append(receivedChunk2)
 
-// Extract frames
 if let payload = try parser.nextFrame() {
     let decoder = BlazeBinaryDecoder(data: payload)
     let message = try decoder.decode(Message.self)
@@ -885,20 +877,22 @@ Error cases:
 All decoding operations perform strict bounds checking:
 
 ```swift
-// This will throw BlazeBinaryError.truncated
 let decoder = BlazeBinaryDecoder(data: Data([0x01, 0x02]))
-let value = try decoder.decodeUInt32()  // Needs 4 bytes, only 2 available
+let value = try decoder.decodeUInt32()  // Throws: BlazeBinaryError.truncated
 ```
+
+> **Error:** Needs 4 bytes, only 2 available.
 
 ### Length Validation
 
 Variable-length fields are validated against `maxAllowedLength`:
 
 ```swift
-// Default max: 10 MB
 let decoder = BlazeBinaryDecoder(data: hugeData, maxAllowedLength: 1024)
 let data = try decoder.decodeData()  // Throws if length > 1024
 ```
+
+> Default max: 10 MB
 
 ### Frame Size Limits
 
@@ -906,10 +900,11 @@ let data = try decoder.decodeData()  // Throws if length > 1024
 - **Max Buffer Size**: 10 MB (prevents buffer overflow attacks)
 
 ```swift
-// This will throw BlazeBinaryError.oversizedFrame
 let hugePayload = Data(repeating: 0, count: 6 * 1024 * 1024)
-let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // 6 MB > 5 MB limit
+let frame = try BlazeFrameEncoder.encodeFrame(hugePayload)  // Throws: oversizedFrame
 ```
+
+> **Limit:** 6 MB exceeds 5 MB maximum frame size.
 
 ### Invalid Data Rejection
 

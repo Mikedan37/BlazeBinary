@@ -45,13 +45,13 @@ graph TD
     E --> F[Validate CRC32]
     F --> G[Output: Structured Data]
     
-    style A fill:#e1f5ff
-    style G fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
-    style E fill:#fff4e1
-    style F fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style G fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
+    style D fill:#34495e,color:#ffffff
+    style E fill:#34495e,color:#ffffff
+    style F fill:#34495e,color:#ffffff
 ```
 
 ## Core Decoding Operations
@@ -74,9 +74,9 @@ flowchart TD
     Overflow -->|Yes| Error[Error: Varint too large]
     Overflow -->|No| Read
     
-    style Start fill:#e1f5ff
-    style Return fill:#e8f5e9
-    style Error fill:#ffebee
+    style Start fill:#2c3e50,color:#ffffff
+    style Return fill:#27ae60,color:#ffffff
+    style Error fill:#e74c3c,color:#ffffff
 ```
 
 **Example**: `[0xE5, 0x8E, 0x26]` → `624485`
@@ -96,10 +96,10 @@ flowchart TD
     CheckOdd -->|Yes| Neg[Return -zigzag + 1 >> 1]
     CheckOdd -->|No| Pos[Return zigzag >> 1]
     
-    style Start fill:#e1f5ff
-    style ReturnMin fill:#e8f5e9
-    style Neg fill:#e8f5e9
-    style Pos fill:#e8f5e9
+    style Start fill:#2c3e50,color:#ffffff
+    style ReturnMin fill:#27ae60,color:#ffffff
+    style Neg fill:#27ae60,color:#ffffff
+    style Pos fill:#27ae60,color:#ffffff
 ```
 
 **Example**: `1` → `-1`, `2` → `1`, `3` → `-2`

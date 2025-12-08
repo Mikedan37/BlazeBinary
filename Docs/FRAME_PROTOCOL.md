@@ -20,10 +20,10 @@ graph TD
     C --> C1[4 bytes, big-endian]
     D --> D1[Variable length]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
+    style D fill:#34495e,color:#ffffff
 ```
 
 **Frame Structure**:

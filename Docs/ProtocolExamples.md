@@ -120,11 +120,11 @@ graph TD
     D --> D1[Varint: 60<br/>zigzag of 30]
     E --> E1[Byte: 0x01]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
-    style E fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
+    style D fill:#34495e,color:#ffffff
+    style E fill:#34495e,color:#ffffff
 ```
 
 ---
@@ -317,10 +317,10 @@ graph TD
     C1 --> C2[Varint: 17<br/>UTF-8: alice@example.com]
     D --> D1[Bool: absent 0x00<br/>nil]
     
-    style A fill:#e1f5ff
-    style B fill:#fff4e1
-    style C fill:#fff4e1
-    style D fill:#fff4e1
+    style A fill:#2c3e50,color:#ffffff
+    style B fill:#34495e,color:#ffffff
+    style C fill:#34495e,color:#ffffff
+    style D fill:#34495e,color:#ffffff
 ```
 
 ---
