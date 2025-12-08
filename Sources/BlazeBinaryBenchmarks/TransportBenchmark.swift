@@ -59,15 +59,12 @@ class TransportBenchmarkRunner {
         let listener = try NWListener(using: tcpParams, on: NWEndpoint.Port(rawValue: port)!)
         
         var receivedFrames = 0
-        var latencies: [TimeInterval] = []
         var startTime: Date?
         var endTime: Date?
         
         let semaphore = DispatchSemaphore(value: 0)
-        var connection: NWConnection?
         
         listener.newConnectionHandler = { newConnection in
-            connection = newConnection
             newConnection.start(queue: .global())
             
             // Start receiving
@@ -120,12 +117,10 @@ class TransportBenchmarkRunner {
         clientParams.requiredInterfaceType = .loopback
         let client = NWConnection(host: NWEndpoint.Host("127.0.0.1"), port: NWEndpoint.Port(rawValue: port)!, using: clientParams)
         
-        var clientStartTime: Date?
         var sendLatencies: [TimeInterval] = []
         
         client.stateUpdateHandler = { state in
             if state == .ready {
-                clientStartTime = Date()
                 
                 // Send frames
                 for i in 0..<iterations {
@@ -184,7 +179,7 @@ class TransportBenchmarkRunner {
             throughput: throughput,
             bandwidth: bandwidth,
             latency: latencyMetrics,
-            overhead: OverheadMetrics(
+            overhead: TransportBenchmarkResult.OverheadMetrics(
                 headerBytes: totalHeaderSize,
                 totalBytes: totalBytes,
                 overheadPercent: overheadPercent
@@ -325,7 +320,7 @@ class TransportBenchmarkRunner {
             throughput: throughput,
             bandwidth: bandwidth,
             latency: latencyMetrics,
-            overhead: OverheadMetrics(
+            overhead: TransportBenchmarkResult.OverheadMetrics(
                 headerBytes: totalHeaderSize,
                 totalBytes: totalBytes,
                 overheadPercent: overheadPercent
