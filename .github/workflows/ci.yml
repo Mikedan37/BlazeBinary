@@ -35,13 +35,16 @@ jobs:
         test -f SECURITY.md || exit 1
         test -f CONTRIBUTING.md || exit 1
         test -f CHANGELOG.md || exit 1
-        test -f Docs/SPECIFICATION.md || exit 1
-        test -f Docs/ARCHITECTURE.md || exit 1
-        test -f Docs/ENCODING_MODEL.md || exit 1
-        test -f Docs/FRAME_PROTOCOL.md || exit 1
-        test -f Docs/THREAT_MODEL.md || exit 1
-        test -f Docs/BENCHMARKS.md || exit 1
+        test -f Docs/Core/SPECIFICATION_v1.3.md || exit 1
+        test -f Docs/Core/ARCHITECTURE.md || exit 1
+        test -f Docs/Core/ENCODING_MODEL.md || exit 1
+        test -f Docs/Core/FRAME_PROTOCOL.md || exit 1
+        test -f Docs/Security/THREAT_MODEL.md || exit 1
+        test -f Docs/Performance/BENCHMARKS.md || exit 1
         echo "All required documentation files exist"
+    
+    - name: Resolve dependencies
+      run: swift package resolve
     
     - name: Build
       run: swift build
