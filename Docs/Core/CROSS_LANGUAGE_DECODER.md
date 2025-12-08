@@ -259,7 +259,7 @@ This section outlines planned work for cross-language implementations:
 
 ## Resources
 
-- [Specification](SPECIFICATION.md) – Complete format specification
+- [Specification](SPECIFICATION_v1.3.md) – Complete format specification (Protocol v1.3)
 - [Encoding Model](ENCODING_MODEL.md) – Encoding strategies and optimizations
 - [Architecture](ARCHITECTURE.md) – Implementation structure
 - [Swift Reference](https://github.com/Mikedan37/BlazeBinary) – Reference implementation
@@ -268,7 +268,7 @@ This section outlines planned work for cross-language implementations:
 
 ### Related Documents
 
-- [Specification](SPECIFICATION.md)
+- [Specification](SPECIFICATION_v1.3.md)
 - [Encoding Model](ENCODING_MODEL.md)
 - [Architecture](ARCHITECTURE.md)
 - [Rationale](RATIONALE.md)
