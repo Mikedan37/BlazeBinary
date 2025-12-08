@@ -264,7 +264,13 @@ final class EncryptedFrameTests: XCTestCase {
             XCTAssertTrue(error is BlazeBinaryError)
             // Should fail due to authentication failure (wrong key)
             if case BlazeBinaryError.encryptionFailed(let message) = error {
-                XCTAssertTrue(message.contains("ChaChaPoly") || message.contains("decryption failed"))
+                // Accept various error message formats from ChaChaPoly
+                XCTAssertTrue(
+                    message.contains("Authentication failed") ||
+                    message.contains("ChaChaPoly") ||
+                    message.contains("decryption failed") ||
+                    message.contains("authentication")
+                )
             } else {
                 XCTFail("Expected encryptionFailed error, got: \(error)")
             }
@@ -294,13 +300,16 @@ final class EncryptedFrameTests: XCTestCase {
         let decrypted1 = try receiveSession.decryptFramePayload(encrypted)
         XCTAssertEqual(decrypted1, plaintext)
         
-        // Replay should be detected (counter should not decrease)
-        // Note: Current implementation tracks highest counter but doesn't reject
-        // This test verifies the counter tracking works
-        let decrypted2 = try receiveSession.decryptFramePayload(encrypted)
-        XCTAssertEqual(decrypted2, plaintext)
-        
-        // Future: Add strict replay protection that rejects nonces with counter <= recvCounter
+        // Replay should be detected and rejected
+        // The same frame (same counter) should be rejected as a replay
+        XCTAssertThrowsError(try receiveSession.decryptFramePayload(encrypted)) { error in
+            XCTAssertTrue(error is BlazeBinaryError)
+            if case BlazeBinaryError.encryptionFailed(let message) = error {
+                XCTAssertTrue(message.contains("Replay detected") || message.contains("replay"))
+            } else {
+                XCTFail("Expected encryptionFailed with replay message, got: \(error)")
+            }
+        }
     }
     
     // MARK: - Truncated Frame Tests

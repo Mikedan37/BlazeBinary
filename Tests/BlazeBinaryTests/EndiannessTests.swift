@@ -42,15 +42,25 @@ final class EndiannessTestsTests: XCTestCase {
         XCTAssert(decoded == value)
     }
     func testBigEndianFrameLength() throws {
-        // Frame length prefix is big-endian
+        // Frame length prefix is big-endian (v2.0 format)
         let payload = Data([0x01, 0x02, 0x03, 0x04])
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
         
+        // v2.0 frame format:
+        // - Byte 0: frameType (0x00 = plaintext)
+        // - Byte 1: compressionMode (0x00 = none)
+        // - Bytes 2-5: payloadLength (big-endian UInt32)
+        // - Bytes 6+: payload
+        
+        // Check frameType
+        XCTAssert(frame[0] == 0x00, "Frame type should be 0x00 (plaintext)")
+        // Check compressionMode
+        XCTAssert(frame[1] == 0x00, "Compression mode should be 0x00 (none)")
         // Length should be 4, encoded as big-endian: 0x00, 0x00, 0x00, 0x04
-        XCTAssert(frame[0] == 0x00)
-        XCTAssert(frame[1] == 0x00)
-        XCTAssert(frame[2] == 0x00)
-        XCTAssert(frame[3] == 0x04)
+        XCTAssert(frame[2] == 0x00, "Length byte 0 should be 0x00")
+        XCTAssert(frame[3] == 0x00, "Length byte 1 should be 0x00")
+        XCTAssert(frame[4] == 0x00, "Length byte 2 should be 0x00")
+        XCTAssert(frame[5] == 0x04, "Length byte 3 should be 0x04")
         
         // Verify round-trip
         let parser = BlazeFrameParser()

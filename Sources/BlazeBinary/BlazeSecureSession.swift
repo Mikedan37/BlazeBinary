@@ -202,7 +202,7 @@ public struct BlazeSecureSession {
         } catch {
             // Map ChaChaPoly errors to BlazeBinaryError
             // Authentication failures are critical - drop connection
-            // Maps to CryptoError.authenticationFailed via error conversion
+            // Maps to BlazeBinary.CryptoError.authenticationFailed via error conversion
             throw BlazeBinaryError.encryptionFailed("Authentication failed: \(error)")
         }
         
@@ -222,16 +222,22 @@ public struct BlazeSecureSession {
             return value
         }
         
-        // Strict replay protection: reject nonces with counter < recvCounter
-        // Allow counter >= recvCounter (next expected frame or future frame)
-        // This ensures strictly monotonic counters while allowing the next expected frame
-        if strictReplayProtection && counter < recvCounter {
-            // Counter is less than highest seen - definitely a replay
-            throw CryptoError.nonceReuse
+        // Strict replay protection: reject nonces with counter < recvCounter or counter == recvCounter (duplicate)
+        // Allow counter > recvCounter (future frame)
+        // This ensures strictly monotonic counters
+        if strictReplayProtection {
+            if counter < recvCounter {
+                // Counter is less than highest seen - definitely a replay
+                throw BlazeBinaryError.encryptionFailed("Replay detected: counter \(counter) < recvCounter \(recvCounter)")
+            }
+            if counter == recvCounter && recvCounter > 0 {
+                // Duplicate frame (same counter as last frame) - also a replay
+                throw BlazeBinaryError.encryptionFailed("Replay detected: duplicate frame with counter \(counter)")
+            }
         }
         
         // Update receive counter (strictly monotonic)
-        // Set to counter + 1 to ensure next frame must have counter >= recvCounter
+        // Set to counter + 1 to ensure next frame must have counter > recvCounter
         // This prevents accepting the same counter twice
         recvCounter = counter + 1
         
