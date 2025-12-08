@@ -266,7 +266,7 @@ final class ConformanceTests: XCTestCase {
         // MARK: - Round-Trip Integrity
         func testRoundTripIntegrityPrimitives() throws {
             let testCases: [(Any, (BlazeBinaryEncoder) -> Void, (BlazeBinaryDecoder) throws -> Any)] = [
-                (UInt32(42), { $0.encode(42) }, { try $0.decodeUInt32() }),
+                (UInt32(42), { $0.encode(UInt32(42)) }, { try $0.decodeUInt32() }),
                 (UInt64(123), { $0.encode(UInt64(123)) }, { try $0.decodeUInt64() }),
                 (Int(-100), { $0.encode(-100) }, { try $0.decodeInt() }),
                 (true, { $0.encode(true) }, { try $0.decodeBool() }),
