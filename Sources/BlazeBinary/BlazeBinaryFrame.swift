@@ -279,9 +279,7 @@ public class BlazeFrameParser {
             // Check if bytes 0-1 could be frameType + compressionMode
             if (byte0 <= 0x02) && (byte1 <= 0x02) {
                 // Read potential payload length (bytes 2-5)
-                guard buffer.count >= 6 else {
-                    isV2Format = false
-                } else {
+                if buffer.count >= 6 {
                     let lengthBytes = buffer.subdata(in: 2..<6)
                     let potentialLength = lengthBytes.withUnsafeBytes { bytes in
                         guard bytes.count >= 4 else {
@@ -305,6 +303,8 @@ public class BlazeFrameParser {
                         // Potential length is invalid, treat as v1.0
                         isV2Format = false
                     }
+                } else {
+                    isV2Format = false
                 }
             } else {
                 // Bytes 0-1 don't look like frameType + compressionMode, treat as v1.0
