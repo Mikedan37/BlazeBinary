@@ -155,8 +155,8 @@ final class EncryptedFrameFlowTests: XCTestCase {
         // (AAD mismatch would cause authentication failure)
         
         // Create session with different config (different AAD context)
-        let alice = BlazeSecureHandshake(role: .client)
-        let bob = BlazeSecureHandshake(role: .server)
+        _ = BlazeSecureHandshake(role: .client)
+        _ = BlazeSecureHandshake(role: .server)
         
         let customConfig = BlazeCryptoConfig(
             hkdfInfo: Data("DifferentContext".utf8) // Different info = different keys

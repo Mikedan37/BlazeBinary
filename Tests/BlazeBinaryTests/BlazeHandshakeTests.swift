@@ -54,11 +54,11 @@ final class BlazeHandshakeTests: XCTestCase {
         // Two separate handshakes should produce different keys
         var handshake1 = BlazeSecureHandshake(role: .client)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake1.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello1 = server1.makeServerHello()
         let serverHello2 = server2.makeServerHello()
         
@@ -232,12 +232,12 @@ final class BlazeHandshakeTests: XCTestCase {
         let config2 = BlazeCryptoConfig(hkdfInfo: Data("Context2".utf8))
         
         var client1 = BlazeSecureHandshake(role: .client, config: config1)
-        var server1 = BlazeSecureHandshake(role: .server, config: config1)
+        let server1 = BlazeSecureHandshake(role: .server, config: config1)
         var client2 = BlazeSecureHandshake(role: .client, config: config2)
-        var server2 = BlazeSecureHandshake(role: .server, config: config2)
+        let server2 = BlazeSecureHandshake(role: .server, config: config2)
         
-        let hello1 = client1.makeClientHello()
-        let hello2 = client2.makeClientHello()
+        _ = client1.makeClientHello()
+        _ = client2.makeClientHello()
         let serverHello1 = server1.makeServerHello()
         let serverHello2 = server2.makeServerHello()
         

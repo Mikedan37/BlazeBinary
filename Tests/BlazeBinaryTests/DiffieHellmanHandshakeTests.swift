@@ -70,7 +70,7 @@ final class DiffieHellmanHandshakeTests: XCTestCase {
     }
     
     func testHandshakeWithoutRemoteKey() {
-        var handshake = BlazeSecureHandshake(role: .client)
+        let handshake = BlazeSecureHandshake(role: .client)
         
         // Should fail if remote key not received
         XCTAssertThrowsError(try handshake.deriveSessionKeys()) { error in

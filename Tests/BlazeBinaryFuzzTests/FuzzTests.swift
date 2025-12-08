@@ -96,7 +96,7 @@ final class FuzzTests: XCTestCase {
         frame.append(contentsOf: withUnsafeBytes(of: oversizedLength) { Data($0) })
         
         let parser = BlazeFrameParser()
-        try? parser.append(frame)
+        _ = try? parser.append(frame)
         
         XCTAssertThrowsError(try parser.nextFrame()) { error in
             XCTAssertTrue(error is BlazeBinaryError)
@@ -115,7 +115,7 @@ final class FuzzTests: XCTestCase {
     zeroFrame.append(contentsOf: withUnsafeBytes(of: zeroLength) { Data($0) })
     
     let parser = BlazeFrameParser()
-    try? parser.append(zeroFrame)
+    _ = try? parser.append(zeroFrame)
     
     XCTAssertThrowsError(try parser.nextFrame()) { error in
             XCTAssertTrue(error is BlazeBinaryError)

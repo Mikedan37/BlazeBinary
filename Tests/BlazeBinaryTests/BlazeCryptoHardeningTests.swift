@@ -49,13 +49,13 @@ final class BlazeCryptoHardeningTests: XCTestCase {
     func testMismatchedKeysFail() throws {
         // Two different handshakes should produce different keys
         var handshake1 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
+        _ = handshake1.makeClientHello()
         let serverHello1 = server1.makeServerHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello2 = server2.makeServerHello()
         
         let keys1 = try handshake1.processInboundMessage(serverHello1)
@@ -97,7 +97,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         // But keys should be different each time
         var handshake1 = BlazeSecureHandshake(role: .client)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server = BlazeSecureHandshake(role: .server)
+        let server = BlazeSecureHandshake(role: .server)
         
         let serverHello = server.makeServerHello()
         
@@ -124,7 +124,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Message".utf8)
         
@@ -182,7 +182,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // Encrypt frame 1
         let encrypted1 = try clientSession.makeEncryptedFrame(from: Data("Message 1".utf8))
@@ -225,7 +225,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         let encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -249,13 +249,13 @@ final class BlazeCryptoHardeningTests: XCTestCase {
     func testWrongKeyMustFailEveryTime() throws {
         // Test that wrong key ALWAYS fails (not probabilistic)
         var handshake1 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
+        _ = handshake1.makeClientHello()
         let serverHello1 = server1.makeServerHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello2 = server2.makeServerHello()
         
         let keys1 = try handshake1.processInboundMessage(serverHello1)
@@ -290,7 +290,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -323,7 +323,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -353,7 +353,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test message for tampering".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -378,13 +378,13 @@ final class BlazeCryptoHardeningTests: XCTestCase {
     func testWrongNoncePrefix() throws {
         // Create two sessions with different nonce prefixes
         var handshake1 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
+        _ = handshake1.makeClientHello()
         let serverHello1 = server1.makeServerHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello2 = server2.makeServerHello()
         
         let keys1 = try handshake1.processInboundMessage(serverHello1)
@@ -423,7 +423,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -449,7 +449,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         var serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
-        let serverHello = serverHandshake.makeServerHello()
+        _ = serverHandshake.makeServerHello()
         
         let serverKeys = try! serverHandshake.processInboundMessage(clientHello)
         var serverSession = BlazeSecureSession(keyMaterial: serverKeys)

@@ -59,14 +59,11 @@ final class HandshakeFuzzTests: XCTestCase {
             
             // Should either accept (valid key) or reject gracefully (invalid key)
             // Must not crash
-            let result = try? server.receiveRemotePublicKey(randomMessage)
+            _ = try? server.receiveRemotePublicKey(randomMessage)
             
-            if result != nil {
-                // If accepted, derivation might fail
-                let derivationResult = try? server.deriveSessionKeys()
-                // Either succeeds or fails gracefully - no crash
-                _ = derivationResult
-            }
+            // If accepted, derivation might fail
+            _ = try? server.deriveSessionKeys()
+            // Either succeeds or fails gracefully - no crash
         }
     }
     
@@ -82,8 +79,8 @@ final class HandshakeFuzzTests: XCTestCase {
             let message = makeHandshakeMessage(type: 0x01, publicKey: randomKey)
             
             // Must not crash
-            let result = try? server.receiveRemotePublicKey(message)
-            _ = result // Either succeeds or fails gracefully
+            _ = try? server.receiveRemotePublicKey(message)
+            // Either succeeds or fails gracefully
         }
     }
     
@@ -108,7 +105,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            let result = try? session.decryptFramePayload(fuzzed)
+            _ = try? session.decryptFramePayload(fuzzed)
             _ = result // Either succeeds or fails gracefully
         }
     }
@@ -137,7 +134,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            let result = try? session.decryptFramePayload(fuzzed)
+            _ = try? session.decryptFramePayload(fuzzed)
             _ = result // Either succeeds or fails gracefully
         }
     }
@@ -160,7 +157,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            let result = try? session.decryptFramePayload(fuzzed)
+            _ = try? session.decryptFramePayload(fuzzed)
             _ = result // Either succeeds or fails gracefully
         }
     }
@@ -177,8 +174,8 @@ final class HandshakeFuzzTests: XCTestCase {
             let randomMessage = randomBytes(count: size)
             
             // Must not crash
-            let result = try? server.receiveRemotePublicKey(randomMessage)
-            _ = result // Either succeeds or fails gracefully
+            _ = try? server.receiveRemotePublicKey(randomMessage)
+            // Either succeeds or fails gracefully
         }
     }
     
@@ -202,8 +199,7 @@ final class HandshakeFuzzTests: XCTestCase {
             message.append(randomKey)
             
             // Must not crash
-            let result = try? server.receiveRemotePublicKey(message)
-            _ = result
+            _ = try? server.receiveRemotePublicKey(message)
         }
     }
     
@@ -226,7 +222,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash
-            let result = try? session.decryptFramePayload(fuzzed)
+            _ = try? session.decryptFramePayload(fuzzed)
             _ = result
         }
     }
@@ -269,8 +265,7 @@ final class HandshakeFuzzTests: XCTestCase {
         let zeroMessage = Data(repeating: 0x00, count: 36)
         
         // Must not crash
-        let result = try? server.receiveRemotePublicKey(zeroMessage)
-        _ = result
+        _ = try? server.receiveRemotePublicKey(zeroMessage)
     }
     
     func testFuzzAllOnes() throws {
@@ -279,8 +274,7 @@ final class HandshakeFuzzTests: XCTestCase {
         let onesMessage = Data(repeating: 0xFF, count: 36)
         
         // Must not crash
-        let result = try? server.receiveRemotePublicKey(onesMessage)
-        _ = result
+        _ = try? server.receiveRemotePublicKey(onesMessage)
     }
     
     func testFuzzRepeatingPatterns() throws {
@@ -292,8 +286,7 @@ final class HandshakeFuzzTests: XCTestCase {
             let patternMessage = Data(repeating: pattern, count: 36)
             
             // Must not crash
-            let result = try? server.receiveRemotePublicKey(patternMessage)
-            _ = result
+            _ = try? server.receiveRemotePublicKey(patternMessage)
         }
     }
     

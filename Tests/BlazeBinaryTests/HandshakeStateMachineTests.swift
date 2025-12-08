@@ -47,10 +47,10 @@ final class HandshakeStateMachineTests: XCTestCase {
     // MARK: - Invalid Sequence Tests
     
     func testMissingClientHello() throws {
-        var server = BlazeSecureHandshake(role: .server)
+        let server = BlazeSecureHandshake(role: .server)
         
         // Server tries to send ServerHello without receiving ClientHello
-        let serverHello = server.makeServerHello()
+        _ = server.makeServerHello()
         
         // Server can create ServerHello, but cannot derive keys without remote key
         XCTAssertThrowsError(try server.deriveSessionKeys()) { error in
@@ -64,10 +64,10 @@ final class HandshakeStateMachineTests: XCTestCase {
     }
     
     func testMissingServerHello() throws {
-        var client = BlazeSecureHandshake(role: .client)
+        let client = BlazeSecureHandshake(role: .client)
         
         // Client sends ClientHello but never receives ServerHello
-        let clientHello = client.makeClientHello()
+        _ = client.makeClientHello()
         
         // Client cannot derive keys without remote key
         XCTAssertThrowsError(try client.deriveSessionKeys()) { error in
@@ -225,7 +225,7 @@ final class HandshakeStateMachineTests: XCTestCase {
         
         // This might be accepted (extra bytes ignored) or rejected
         // Test that it doesn't crash
-        let result = try? server.receiveRemotePublicKey(tooLarge)
+        _ = try? server.receiveRemotePublicKey(tooLarge)
         // If accepted, key derivation might fail due to invalid key
         if result != nil {
             XCTAssertThrowsError(try server.deriveSessionKeys()) { error in
@@ -291,7 +291,7 @@ final class HandshakeStateMachineTests: XCTestCase {
     // MARK: - State Transition Tests
     
     func testCannotDeriveKeysBeforeReceivingRemoteKey() throws {
-        var client = BlazeSecureHandshake(role: .client)
+        let client = BlazeSecureHandshake(role: .client)
         
         // Try to derive keys before receiving remote key
         XCTAssertThrowsError(try client.deriveSessionKeys()) { error in

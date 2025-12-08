@@ -17,7 +17,7 @@ final class BlazeEncryptionTests: XCTestCase {
     func testEncryptDecryptRoundTrip() throws {
         // Create a session (simulate handshake)
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -41,7 +41,7 @@ final class BlazeEncryptionTests: XCTestCase {
     func testEncryptDecryptMultipleFrames() throws {
         // Test multiple encrypted frames
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -73,7 +73,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testEncryptDecryptEmptyData() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -93,7 +93,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testEncryptDecryptLargeData() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -117,20 +117,20 @@ final class BlazeEncryptionTests: XCTestCase {
     func testWrongKeyDecryptionFails() throws {
         // Create two separate sessions with different keys
         var handshake1 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
+        _ = handshake1.makeClientHello()
         let serverHello1 = server1.makeServerHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello2 = server2.makeServerHello()
         
         let keys1 = try handshake1.processInboundMessage(serverHello1)
         let keys2 = try handshake2.processInboundMessage(serverHello2)
         
         var session1 = BlazeSecureSession(keyMaterial: keys1)
-        var session2 = BlazeSecureSession(keyMaterial: keys2)
+        let session2 = BlazeSecureSession(keyMaterial: keys2)
         
         // Encrypt with session1
         let plaintext = Data("Secret message".utf8)
@@ -150,7 +150,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testTamperedCiphertextFails() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -182,7 +182,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testTamperedTagFails() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -214,7 +214,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testTamperedNonceFails() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -247,7 +247,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testNonceIncrements() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
@@ -324,9 +324,9 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testEncryptedFrameFormat() throws {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
-        let clientHello = clientHandshake.makeClientHello()
+        _ = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
         
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
@@ -355,7 +355,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testDecryptTooShortPayload() {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         let serverHello = serverHandshake.makeServerHello()
         let keys = try! clientHandshake.processInboundMessage(serverHello)
         var session = BlazeSecureSession(keyMaterial: keys)
@@ -374,7 +374,7 @@ final class BlazeEncryptionTests: XCTestCase {
     
     func testDecryptWrongFrameType() {
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         let serverHello = serverHandshake.makeServerHello()
         let keys = try! clientHandshake.processInboundMessage(serverHello)
         var session = BlazeSecureSession(keyMaterial: keys)

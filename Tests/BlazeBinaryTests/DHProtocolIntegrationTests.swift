@@ -184,7 +184,7 @@ final class DHProtocolIntegrationTests: XCTestCase {
         
         // Random key may be valid or invalid - test that we handle it gracefully
         // Swift Crypto may accept some random keys as valid X25519 keys
-        let result = try? handshake.receiveRemotePublicKey(randomKeyMessage)
+        _ = try? handshake.receiveRemotePublicKey(randomKeyMessage)
         // If it doesn't throw, derivation should work (key was valid) or fail gracefully
         if result != nil {
             // Try derivation - it should either succeed (valid key) or fail gracefully

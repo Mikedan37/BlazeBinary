@@ -61,7 +61,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         
         // 9. Create secure sessions
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // 10. Client encrypts and sends frame
         let clientMessage = Data("Hello from client!".utf8)
@@ -96,7 +96,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // Send multiple encrypted frames
         let messages = [
@@ -130,7 +130,8 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         // The issue appears to be in Foundation's Data subscript access
         // Temporarily disabled until we can debug the root cause
         throw XCTSkip("Temporarily disabled - investigating crash on macOS")
-        // Establish session
+        // Code below is unreachable but kept for reference
+        /*
         var clientHandshake = BlazeSecureHandshake(role: .client)
         var serverHandshake = BlazeSecureHandshake(role: .server)
         
@@ -141,7 +142,8 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        */
         
         // Create plaintext frame (legacy)
         let plaintextMessage = Data("Plaintext message".utf8)
@@ -192,10 +194,10 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
     func testEncryptedFramesWithoutSession() throws {
         // Encrypted frames without session should return encrypted payload as-is
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        var serverHandshake = BlazeSecureHandshake(role: .server)
+        let serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
-        let serverHello = serverHandshake.makeServerHello()
+        _ = serverHandshake.makeServerHello()
         
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         
@@ -275,20 +277,20 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
     func testEncryptedFrameWithWrongSession() throws {
         // Create two different sessions
         var handshake1 = BlazeSecureHandshake(role: .client)
-        var server1 = BlazeSecureHandshake(role: .server)
+        let server1 = BlazeSecureHandshake(role: .server)
         var handshake2 = BlazeSecureHandshake(role: .client)
-        var server2 = BlazeSecureHandshake(role: .server)
+        let server2 = BlazeSecureHandshake(role: .server)
         
-        let hello1 = handshake1.makeClientHello()
+        _ = handshake1.makeClientHello()
         let serverHello1 = server1.makeServerHello()
-        let hello2 = handshake2.makeClientHello()
+        _ = handshake2.makeClientHello()
         let serverHello2 = server2.makeServerHello()
         
         let keys1 = try handshake1.processInboundMessage(serverHello1)
         let keys2 = try handshake2.processInboundMessage(serverHello2)
         
         var session1 = BlazeSecureSession(keyMaterial: keys1)
-        var session2 = BlazeSecureSession(keyMaterial: keys2)
+        let session2 = BlazeSecureSession(keyMaterial: keys2)
         
         // Encrypt with session1
         let message = Data("Secret".utf8)
@@ -318,7 +320,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let message = Data("Test".utf8)
         var encryptedFrame = try BlazeFrameEncoder.encodeEncryptedFrame(message, session: &clientSession)
@@ -332,7 +334,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         
         // Parser might return nil (incomplete frame) or throw
         // Either is acceptable - the important thing is it doesn't crash
-        let result = try? parser.nextFrame()
+        _ = try? parser.nextFrame()
         // If it returns nil, that's fine (incomplete frame)
         // If it throws, that's also fine (invalid frame)
     }

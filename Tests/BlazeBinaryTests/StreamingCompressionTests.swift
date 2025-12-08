@@ -32,10 +32,10 @@ final class StreamingCompressionTests: XCTestCase {
         
         // Decompress (needs all compressed data)
         let decompressor = try BlazeStreamingDecompressor(mode: .lz4)
-        try decompressor.decompress(allCompressed)
+        _ = try decompressor.decompress(allCompressed)
         let decompressed = try decompressor.decompressFinal()
         
-        let original = chunk1 + chunk2 + chunk3
+        _ = chunk1 + chunk2 + chunk3
         // Note: Due to chunked compression, exact match may not be possible
         // Verify we got reasonable data back
         XCTAssertFalse(decompressed.isEmpty)
@@ -56,7 +56,7 @@ final class StreamingCompressionTests: XCTestCase {
         
         // Decompress (provide all compressed data)
         let decompressor = try BlazeStreamingDecompressor(mode: .lz4)
-        try decompressor.decompress(allCompressed)
+        _ = try decompressor.decompress(allCompressed)
         let decompressed = try decompressor.decompressFinal()
         
         // Verify we got some data back
@@ -75,7 +75,7 @@ final class StreamingCompressionTests: XCTestCase {
         allCompressed.append(final)
         
         let decompressor = try BlazeStreamingDecompressor(mode: .lzfse)
-        try decompressor.decompress(allCompressed)
+        _ = try decompressor.decompress(allCompressed)
         let decompressed = try decompressor.decompressFinal()
         
         // Verify we got data back (may not be exact due to chunking)

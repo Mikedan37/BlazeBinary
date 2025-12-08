@@ -126,7 +126,7 @@ final class CompressionTests: XCTestCase {
         try! parser.append(frame)
         // This might fail if parser misinterprets - that's a limitation we need to document
         // For now, let's just test that it doesn't crash
-        let decoded = try? parser.nextFrame()
+        _ = try? parser.nextFrame()
         // If decoded is nil or wrong, that's expected due to the ambiguity
         // In production, avoid payloads starting with 0x01/0x02 when not using compression
     }
