@@ -252,6 +252,11 @@ public class BlazeFrameParser {
             return nil // Need more data
         }
         
+        // Ensure buffer is not empty before accessing indices
+        guard !buffer.isEmpty else {
+            return nil
+        }
+        
         // Try to detect v2.0 format: check if bytes 0-1 look like frameType + compressionMode
         // v2.0 format: byte0 is frameType (0x00-0x02), byte1 is compressionMode (0x00-0x02)
         // v1.0 format: bytes 0-3 form a length prefix (big-endian UInt32)
@@ -259,6 +264,10 @@ public class BlazeFrameParser {
         // treat as v2.0. Otherwise, treat as v1.0.
         let isV2Format: Bool
         if buffer.count >= 6 {
+            // Safe to access buffer[0] and buffer[1] - we've checked buffer.count >= 6
+            guard buffer.count >= 2 else {
+                return nil // Need more data
+            }
             let byte0 = buffer[0]
             let byte1 = buffer[1]
             
@@ -296,6 +305,10 @@ public class BlazeFrameParser {
         
         if isV2Format {
             // v2.0 format: explicit frameType and compressionMode
+            // Safe to access - we've already validated buffer.count >= 6 in detection
+            guard buffer.count >= 2 else {
+                return nil // Need more data (shouldn't happen, but defensive)
+            }
             let frameType = buffer[0]
             let compressionModeByte = buffer[1]
             
@@ -378,17 +391,35 @@ public class BlazeFrameParser {
                 if var session = secureSession {
                     let decrypted = try session.decryptFramePayload(payload)
                     secureSession = session
+                    // Validate buffer has enough data before removing
+                    guard buffer.count >= totalFrameSize else {
+                        throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
+                    }
                     buffer.removeFirst(totalFrameSize)
                     return decrypted
                 } else {
+                    // Validate payload has enough data for subdata
+                    guard payload.count > 1 else {
+                        throw BlazeBinaryError.decodeFailed("Encrypted payload too small for subdata extraction")
+                    }
                     let encryptedData = payload.subdata(in: 1..<payload.count)
+                    // Validate buffer has enough data before removing
+                    guard buffer.count >= totalFrameSize else {
+                        throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
+                    }
                     buffer.removeFirst(totalFrameSize)
                     return encryptedData
                 }
             } else if frameType == SecureFrameType.handshake.rawValue {
+                guard buffer.count >= totalFrameSize else {
+                    throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
+                }
                 buffer.removeFirst(totalFrameSize)
                 return payload
             } else {
+                guard buffer.count >= totalFrameSize else {
+                    throw BlazeBinaryError.decodeFailed("Buffer underflow: need \(totalFrameSize) bytes, have \(buffer.count)")
+                }
                 buffer.removeFirst(totalFrameSize)
                 return payload
             }
