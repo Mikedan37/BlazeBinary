@@ -114,9 +114,12 @@ public class BlazeFrameParser {
         }
         
         // Extract frame payload before modifying buffer
-        // Create an explicit copy to avoid issues with buffer modification on Linux
-        // subdata creates a copy, but we ensure it's done before removeFirst
-        let payload = Data(buffer[4..<totalFrameSize])
+        // Force an explicit copy to avoid issues with buffer modification on Linux
+        // We use withUnsafeBytes to explicitly copy the bytes into a new Data instance
+        let payloadRange = 4..<totalFrameSize
+        let payload = buffer.subdata(in: payloadRange).withUnsafeBytes { bytes in
+            Data(bytes)
+        }
         
         // Remove processed frame from buffer
         buffer.removeFirst(totalFrameSize)
