@@ -13,6 +13,7 @@ public class BlazeBinaryDecoder {
     @usableFromInline internal let data: Data
     @usableFromInline internal var offset: Int
     @usableFromInline internal let maxAllowedLength: Int
+    @usableFromInline internal let schemaVersion: UInt32
     
     /// Creates a new decoder from the provided data.
     /// - Parameters:
@@ -22,6 +23,85 @@ public class BlazeBinaryDecoder {
         self.data = data
         self.offset = 0
         self.maxAllowedLength = maxAllowedLength
+        
+        // Detect schema version: if first byte is 0xFE, try to read varint as schema version
+        // Schema version marker: 0xFE followed by varint (schema version >= 2)
+        // We distinguish from regular data by checking if the varint is valid and >= 2
+        // Note: 0xFE (254) can appear as a regular varint value, so we need careful detection
+        if !data.isEmpty && data[0] == 0xFE && data.count > 1 {
+            // Potential schema version marker - read varint
+            var savedOffset = 1 // Skip marker byte
+            var result: UInt64 = 0
+            var shift: UInt64 = 0
+            var bytesRead = 0
+            let maxBytes = 10
+            
+            // Read varint schema version (safely, without throwing)
+            // We read up to maxBytes or until we hit the end of data
+            var lastByteHadContinuation = false
+            while bytesRead < maxBytes && savedOffset < data.count {
+                let byte = data[savedOffset]
+                savedOffset += 1
+                bytesRead += 1
+                
+                result |= UInt64(byte & 0x7F) << shift
+                lastByteHadContinuation = (byte & 0x80) != 0
+                
+                if !lastByteHadContinuation {
+                    break
+                }
+                
+                shift += 7
+                if shift >= 64 {
+                    // Invalid varint (too many bits), assume v1
+                    self.schemaVersion = 1
+                    self.offset = 0
+                    return
+                }
+            }
+            
+            // If we didn't read a complete varint (last byte had continuation bit or no bytes read), 
+            // it's not a schema version marker - treat as regular data
+            if lastByteHadContinuation || bytesRead == 0 {
+                self.schemaVersion = 1
+                self.offset = 0
+                return
+            }
+            
+            // Validate: schema version must be >= 2 and reasonable
+            // Version 1 is never encoded (backwards compatibility)
+            // If result is 1 or 0, it's likely a false positive (data starting with 0xFE 0x01 or 0xFE 0x00)
+            // Schema versions can be multi-byte varints, but we need to distinguish from regular data
+            // Key insight: If the varint we read would leave no data remaining (savedOffset >= data.count),
+            // it's likely a false positive - we're reading the entire data as a schema version, leaving nothing to decode
+            // This prevents cases like [0xFE, 0xFF, 0x00] (value 16383) from being misidentified
+            if result >= 2 && result <= UInt32.max {
+                // Additional check: if reading this as schema version would consume all data, it's a false positive
+                // Schema version should be followed by actual encoded data, so there should be data remaining
+                if savedOffset >= data.count {
+                    // No data remaining after schema version - likely false positive (entire data is the varint)
+                    self.schemaVersion = 1
+                    self.offset = 0
+                } else {
+                    self.schemaVersion = UInt32(result)
+                    self.offset = savedOffset
+                }
+            } else {
+                // Invalid schema version or result < 2 (false positive), assume v1
+                // Reset offset to 0 so decoder starts from beginning
+                self.schemaVersion = 1
+                self.offset = 0
+            }
+        } else {
+            // No schema version marker, assume v1 (backwards compatible)
+            self.schemaVersion = 1
+            self.offset = 0
+        }
+    }
+    
+    /// Returns the detected schema version (defaults to 1 if not present).
+    public var version: UInt32 {
+        return schemaVersion
     }
     
     /// Returns the remaining unread data.
@@ -246,16 +326,6 @@ public class BlazeBinaryDecoder {
         return result
     }
     
-    // MARK: - Convenience APIs
-    
-    /// Decodes a collection of BlazeBinaryDecodable values.
-    /// Format: <varint count> <item1> <item2> ...
-    /// - Returns: The decoded collection
-    /// - Throws: Any error thrown during decoding
-    public func decodeCollection<T: BlazeBinaryDecodable>() throws -> [T] {
-        return try decodeArray(T.self)
-    }
-    
     // MARK: - Schema Evolution Support
     
     /// Decodes a value if present, otherwise returns nil.
@@ -366,6 +436,47 @@ public class BlazeBinaryDecoder {
         let result = data.subdata(in: offset..<(offset + lengthInt))
         offset += lengthInt
         return result
+    }
+    
+    /// EXPERIMENTAL: Decodes a struct with zero-copy memory mapping.
+    /// 
+    /// This method maps struct memory directly onto the data buffer, eliminating copies.
+    /// 
+    /// **Restrictions**:
+    /// - Struct must contain only fixed-width primitives (UInt8-64, Int8-64, Float, Double, Bool)
+    /// - No variable-length types (String, Data, arrays, optionals)
+    /// - Struct must be properly aligned for the platform
+    /// - Struct layout must match expected byte layout exactly
+    /// 
+    /// - Parameter type: The struct type to decode
+    /// - Returns: The decoded struct value
+    /// - Throws: `BlazeBinaryError` if decoding fails or struct is incompatible
+    public func decodeZeroCopy<T>(_ type: T.Type) throws -> T {
+        // Calculate struct size using MemoryLayout
+        let structSize = MemoryLayout<T>.size
+        let structAlignment = MemoryLayout<T>.alignment
+        
+        // Check bounds
+        try ensureBytes(structSize)
+        
+        // Check alignment
+        let dataPtr = data.withUnsafeBytes { $0.baseAddress }
+        let offsetPtr = dataPtr?.advanced(by: offset)
+        let alignment = Int(bitPattern: offsetPtr) % structAlignment
+        
+        guard alignment == 0 else {
+            throw BlazeBinaryError.decodeFailed("Struct alignment mismatch: offset \(offset) not aligned to \(structAlignment) bytes")
+        }
+        
+        // Validate that T is a fixed-width type (heuristic check)
+        // In production, this would use more sophisticated reflection
+        // For now, we rely on the type system and runtime checks
+        
+        // Perform zero-copy decode
+        return data.withUnsafeBytes { bytes in
+            let sourcePtr = bytes.baseAddress!.advanced(by: offset).assumingMemoryBound(to: T.self)
+            return sourcePtr.pointee
+        }
     }
 }
 

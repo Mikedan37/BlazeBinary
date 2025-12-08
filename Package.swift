@@ -15,13 +15,22 @@ let package = Package(
             targets: ["BlazeBinary"]
         ),
     ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+    ],
     targets: [
         .target(
-            name: "BlazeBinary"
+            name: "BlazeBinary",
+            dependencies: [
+                .product(name: "Crypto", package: "swift-crypto")
+            ]
         ),
         .testTarget(
             name: "BlazeBinaryTests",
-            dependencies: ["BlazeBinary"]
+            dependencies: [
+                "BlazeBinary",
+                .product(name: "Crypto", package: "swift-crypto")
+            ]
         ),
         .executableTarget(
             name: "BlazeBinaryBenchmarks",

@@ -101,7 +101,7 @@ BlazeBinary is a **serialization format**, not a security protocol. It provides 
 - **Strict validation**: All input is validated before processing; malformed data is rejected with clear errors
 - **Bounded resource usage**: Hard limits on frame size, buffer size, and field size prevent unbounded memory allocation
 
-For detailed security guarantees and threat analysis, see [THREAT_MODEL.md](Docs/THREAT_MODEL.md).
+For detailed security guarantees and threat analysis, see [THREAT_MODEL.md](Docs/Security/THREAT_MODEL.md).
 
 ## Security Guarantees
 
@@ -115,7 +115,7 @@ BlazeBinary provides the following security guarantees:
 
 ## References
 
-- [THREAT_MODEL.md](Docs/THREAT_MODEL.md) - Detailed threat analysis
-- [SPECIFICATION.md](Docs/SPECIFICATION.md) - Encoding format specification
-- [ARCHITECTURE.md](Docs/ARCHITECTURE.md) - System architecture
+- [THREAT_MODEL.md](Docs/Security/THREAT_MODEL.md) - Detailed threat analysis
+- [SPECIFICATION.md](Docs/Core/SPECIFICATION.md) - Encoding format specification
+- [ARCHITECTURE.md](Docs/Core/ARCHITECTURE.md) - System architecture
 

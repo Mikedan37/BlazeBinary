@@ -25,6 +25,23 @@ public enum BlazeBinaryError: Error, Equatable {
     /// Decoding operation failed with a specific reason
     case decodeFailed(String)
     
+    /// More data is needed to complete the operation
+    case needMoreData
+    
+    // MARK: - Encryption Errors
+    
+    /// Handshake operation failed
+    case handshakeFailed(String)
+    
+    /// Invalid handshake message format
+    case invalidHandshake(String)
+    
+    /// Encryption/decryption operation failed
+    case encryptionFailed(String)
+    
+    /// Invalid encryption key or session state
+    case invalidSession(String)
+    
     public static func == (lhs: BlazeBinaryError, rhs: BlazeBinaryError) -> Bool {
         switch (lhs, rhs) {
         case (.truncated, .truncated),
@@ -33,14 +50,15 @@ public enum BlazeBinaryError: Error, Equatable {
              (.oversizedFrame, .oversizedFrame),
              (.needMoreData, .needMoreData):
             return true
-        case (.decodeFailed(let lhsMsg), .decodeFailed(let rhsMsg)):
+        case (.decodeFailed(let lhsMsg), .decodeFailed(let rhsMsg)),
+             (.handshakeFailed(let lhsMsg), .handshakeFailed(let rhsMsg)),
+             (.invalidHandshake(let lhsMsg), .invalidHandshake(let rhsMsg)),
+             (.encryptionFailed(let lhsMsg), .encryptionFailed(let rhsMsg)),
+             (.invalidSession(let lhsMsg), .invalidSession(let rhsMsg)):
             return lhsMsg == rhsMsg
         default:
             return false
         }
     }
-    
-    /// More data is needed to complete the operation
-    case needMoreData
 }
 

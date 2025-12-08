@@ -103,15 +103,16 @@ final class VarintTestsTests: XCTestCase {
             // Skip Int.max and Int.min as they have known edge cases with zigzag
             if value == Int.max || value == Int.min {
                 continue
+            }
+            
+            let encoder = BlazeBinaryEncoder()
+            encoder.encode(value)
+            let data = encoder.encodedData()
+            let decoder = BlazeBinaryDecoder(data: data)
+            let decoded = try decoder.decodeInt()
+            XCTAssert(decoded == value, "Boundary test failed for \(value)")
+        }
     }
-        let encoder = BlazeBinaryEncoder()
-        encoder.encode(value)
-        let data = encoder.encodedData()
-        let decoder = BlazeBinaryDecoder(data: data)
-        let decoded = try decoder.decodeInt()
-        XCTAssert(decoded == value, "Boundary test failed for \(value)")
-    }
-}
     func testVarintInvalidEncoding() throws {
         // Create invalid varint (too many continuation bytes)
         var invalid = Data()

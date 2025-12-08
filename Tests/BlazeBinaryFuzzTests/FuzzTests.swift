@@ -30,7 +30,8 @@ final class FuzzTests: XCTestCase {
         } catch let error as BlazeBinaryError {
             // Expected error types
             switch error {
-            case .truncated, .invalidVarint, .invalidFrameLength, .oversizedFrame, .decodeFailed, .needMoreData:
+            case .truncated, .invalidVarint, .invalidFrameLength, .oversizedFrame, .decodeFailed, .needMoreData,
+                 .handshakeFailed, .invalidHandshake, .encryptionFailed, .invalidSession:
                 // Valid error types
                 break
             }
@@ -182,7 +183,8 @@ final class FuzzTests: XCTestCase {
         } catch let error as BlazeBinaryError {
             // All error types are acceptable for garbage data
             switch error {
-            case .truncated, .invalidVarint, .invalidFrameLength, .oversizedFrame, .decodeFailed, .needMoreData:
+            case .truncated, .invalidVarint, .invalidFrameLength, .oversizedFrame, .decodeFailed, .needMoreData,
+                 .handshakeFailed, .invalidHandshake, .encryptionFailed, .invalidSession:
                 break
             }
         } catch {

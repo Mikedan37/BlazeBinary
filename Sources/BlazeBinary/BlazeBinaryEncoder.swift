@@ -11,15 +11,42 @@ import Foundation
 /// Encoder for converting Swift values to deterministic binary format.
 public class BlazeBinaryEncoder {
     @usableFromInline internal var data: Data
+    @usableFromInline internal let schemaVersion: UInt32
     
     /// Creates a new encoder.
-    public init() {
+    /// - Parameter schemaVersion: Optional schema version (default: 1). If > 1, will be encoded in the record.
+    public init(schemaVersion: UInt32 = 1) {
         self.data = Data()
+        self.schemaVersion = schemaVersion
+    }
+    
+    /// Returns the schema version for this encoder.
+    public var version: UInt32 {
+        return schemaVersion
     }
     
     /// Returns the encoded data.
+    /// If schemaVersion > 1, the schema version is prepended to the data.
     public func encodedData() -> Data {
-        return data
+        // If schema version is 1 (default), don't encode it (backwards compatible)
+        if schemaVersion == 1 {
+            return data
+        }
+        
+        // For schema version > 1, prepend: 0xFE (marker) + varint(schemaVersion)
+        var result = Data()
+        result.append(0xFE) // Schema version marker byte
+        var v = UInt64(schemaVersion)
+        repeat {
+            var byte = UInt8(v & 0x7F)
+            v >>= 7
+            if v != 0 {
+                byte |= 0x80
+            }
+            result.append(byte)
+        } while v != 0
+        result.append(data)
+        return result
     }
     
     // MARK: - Varint Encoding (LEB128)
@@ -171,15 +198,5 @@ public class BlazeBinaryEncoder {
         }
     }
     
-    /// Encodes a collection of BlazeBinaryEncodable values.
-    /// Format: <varint count> <item1> <item2> ...
-    /// - Parameter items: The collection to encode
-    /// - Throws: Any error thrown by an item's blazeEncode method
-    public func encodeCollection<T: BlazeBinaryEncodable>(_ items: [T]) throws {
-        encodeVarint(UInt64(items.count))
-        for item in items {
-            try item.blazeEncode(to: self)
-        }
-    }
 }
 

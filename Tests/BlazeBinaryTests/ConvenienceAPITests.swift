@@ -43,11 +43,11 @@ struct TestItem: BlazeBinaryCodable {
         ]
         
         let encoder = BlazeBinaryEncoder()
-        try encoder.encodeCollection(items)
+        try encoder.encode(items)
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        let decoded = try decoder.decodeCollection() as [TestItem]
+        let decoded = try decoder.decodeArray(TestItem.self)
         
         XCTAssert(decoded.count == 3)
         XCTAssert(decoded[0].value == 1)
@@ -58,11 +58,11 @@ struct TestItem: BlazeBinaryCodable {
         let items: [TestItem] = []
         
         let encoder = BlazeBinaryEncoder()
-        try encoder.encodeCollection(items)
+        try encoder.encode(items)
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        let decoded = try decoder.decodeCollection() as [TestItem]
+        let decoded = try decoder.decodeArray(TestItem.self)
         
         XCTAssert(decoded.isEmpty)
     }
@@ -77,7 +77,7 @@ struct TestItem: BlazeBinaryCodable {
             try encoder.encode(items.map { TestItem(value: $0) })
         }
         init(from decoder: BlazeBinaryDecoder) throws {
-            let decoded = try decoder.decodeCollection() as [TestItem]
+            let decoded = try decoder.decodeArray(TestItem.self)
             self.items = decoded.map { $0.value }
         }
     }
