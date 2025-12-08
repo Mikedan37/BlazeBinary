@@ -325,7 +325,11 @@ public class BlazeFrameParser {
             
             // Extract payload (bytes 6+)
             let payloadStartIndex = 6
-            var payload = buffer.subdata(in: payloadStartIndex..<(payloadStartIndex + payloadLengthInt))
+            let payloadEndIndex = payloadStartIndex + payloadLengthInt
+            guard buffer.count >= payloadEndIndex else {
+                return nil // Need more data
+            }
+            var payload = buffer.subdata(in: payloadStartIndex..<payloadEndIndex)
             
             // Parse compression mode (explicit, no detection)
             guard let compressionMode = CompressionMode(rawValue: compressionModeByte) else {
@@ -344,23 +348,23 @@ public class BlazeFrameParser {
             // Handle secure session frame types
             if frameType == SecureFrameType.encrypted.rawValue {
                 // Encrypted frame (minimum size: 1 byte frameType + 12 byte nonce + 16 byte tag = 29 bytes)
-                if payload.count >= 29 {
-                    guard payload[0] == SecureFrameType.encrypted.rawValue else {
-                        throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
-                    }
-                    
-                    if var session = secureSession {
-                        let decrypted = try session.decryptFramePayload(payload)
-                        secureSession = session
-                        buffer.removeFirst(totalFrameSize)
-                        return decrypted
-                    } else {
-                        let encryptedData = payload.subdata(in: 1..<payload.count)
-                        buffer.removeFirst(totalFrameSize)
-                        return encryptedData
-                    }
-                } else {
+                guard payload.count >= 29 else {
                     throw BlazeBinaryError.decodeFailed("Encrypted frame too small: \(payload.count) bytes (minimum 29)")
+                }
+                
+                guard payload[0] == SecureFrameType.encrypted.rawValue else {
+                    throw BlazeBinaryError.decodeFailed("Encrypted frame payload frameType mismatch")
+                }
+                
+                if var session = secureSession {
+                    let decrypted = try session.decryptFramePayload(payload)
+                    secureSession = session
+                    buffer.removeFirst(totalFrameSize)
+                    return decrypted
+                } else {
+                    let encryptedData = payload.subdata(in: 1..<payload.count)
+                    buffer.removeFirst(totalFrameSize)
+                    return encryptedData
                 }
             } else if frameType == SecureFrameType.handshake.rawValue {
                 buffer.removeFirst(totalFrameSize)
