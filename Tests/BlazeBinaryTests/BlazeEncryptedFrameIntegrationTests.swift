@@ -61,7 +61,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         
         // 9. Create secure sessions
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // 10. Client encrypts and sends frame
         let clientMessage = Data("Hello from client!".utf8)
@@ -127,11 +127,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
     
     func testMixedPlaintextAndEncryptedFrames() throws {
         // TODO: This test is currently crashing on macOS with SIGTRAP
-        // The issue appears to be in Foundation's Data subscript access
-        // Temporarily disabled until we can debug the root cause
-        throw XCTSkip("Temporarily disabled - investigating crash on macOS")
-        // Code below is unreachable but kept for reference
-        /*
+        // Create handshake and sessions
         var clientHandshake = BlazeSecureHandshake(role: .client)
         var serverHandshake = BlazeSecureHandshake(role: .server)
         
@@ -142,8 +138,7 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
-        */
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // Create plaintext frame (legacy)
         let plaintextMessage = Data("Plaintext message".utf8)
@@ -194,10 +189,10 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
     func testEncryptedFramesWithoutSession() throws {
         // Encrypted frames without session should return encrypted payload as-is
         var clientHandshake = BlazeSecureHandshake(role: .client)
-        let serverHandshake = BlazeSecureHandshake(role: .server)
+        var serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
-        _ = serverHandshake.makeServerHello()
+        let serverHello = serverHandshake.makeServerHello()
         
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         

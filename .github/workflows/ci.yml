@@ -26,7 +26,6 @@ jobs:
       uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ matrix.swift-version }}
-        xcode-version: ${{ matrix.xcode-version }}
     
     - name: Verify documentation files exist
       run: |

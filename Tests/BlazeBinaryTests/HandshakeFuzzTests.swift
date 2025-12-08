@@ -105,8 +105,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            _ = try? session.decryptFramePayload(fuzzed)
-            _ = result // Either succeeds or fails gracefully
+            _ = try? session.decryptFramePayload(fuzzed) // Either succeeds or fails gracefully
         }
     }
     
@@ -134,8 +133,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            _ = try? session.decryptFramePayload(fuzzed)
-            _ = result // Either succeeds or fails gracefully
+            _ = try? session.decryptFramePayload(fuzzed) // Either succeeds or fails gracefully
         }
     }
     
@@ -157,8 +155,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash, should reject gracefully
-            _ = try? session.decryptFramePayload(fuzzed)
-            _ = result // Either succeeds or fails gracefully
+            _ = try? session.decryptFramePayload(fuzzed) // Either succeeds or fails gracefully
         }
     }
     
@@ -222,8 +219,7 @@ final class HandshakeFuzzTests: XCTestCase {
             }
             
             // Must not crash
-            _ = try? session.decryptFramePayload(fuzzed)
-            _ = result
+            _ = try? session.decryptFramePayload(fuzzed) // Either succeeds or fails gracefully
         }
     }
     

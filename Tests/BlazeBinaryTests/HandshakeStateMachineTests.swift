@@ -225,7 +225,7 @@ final class HandshakeStateMachineTests: XCTestCase {
         
         // This might be accepted (extra bytes ignored) or rejected
         // Test that it doesn't crash
-        _ = try? server.receiveRemotePublicKey(tooLarge)
+        let result = try? server.receiveRemotePublicKey(tooLarge)
         // If accepted, key derivation might fail due to invalid key
         if result != nil {
             XCTAssertThrowsError(try server.deriveSessionKeys()) { error in

@@ -69,21 +69,8 @@ final class ComprehensiveFuzzTests: XCTestCase {
             let decoder = BlazeIncrementalDecoder()
             
             // Should not crash
-            do {
-                decoder.append(randomBytes)
-                _ = try? decoder.decodeNextField()
-            } catch let error as BlazeBinaryError {
-                // Expected errors
-                switch error {
-                case .truncated, .invalidVarint, .decodeFailed:
-                    break
-                default:
-                    // Other errors are also acceptable
-                    break
-                }
-            } catch {
-                // Other errors are acceptable for fuzzing
-            }
+            decoder.append(randomBytes)
+            _ = try? decoder.decodeNextField() // Returns optional, may throw
         }
     }
     
@@ -122,7 +109,7 @@ final class ComprehensiveFuzzTests: XCTestCase {
     
     func testFuzzAEADDecryption() {
         // Create a valid session
-        var clientHandshake = BlazeSecureHandshake(role: .client)
+        let clientHandshake = BlazeSecureHandshake(role: .client)
         var serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()

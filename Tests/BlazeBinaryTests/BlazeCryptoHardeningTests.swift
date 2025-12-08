@@ -124,7 +124,6 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Message".utf8)
         
@@ -182,7 +181,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         // Encrypt frame 1
         let encrypted1 = try clientSession.makeEncryptedFrame(from: Data("Message 1".utf8))
@@ -225,7 +224,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         let encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -290,7 +289,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -323,7 +322,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -353,7 +352,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test message for tampering".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -423,7 +422,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
         var clientSession = BlazeSecureSession(keyMaterial: clientKeys)
-        let serverSession = BlazeSecureSession(keyMaterial: serverKeys)
+        var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
         
         let plaintext = Data("Test".utf8)
         var encrypted = try clientSession.makeEncryptedFrame(from: plaintext)
@@ -445,7 +444,7 @@ final class BlazeCryptoHardeningTests: XCTestCase {
     
     func testRandomGarbageAsEncryptedFrame() {
         // Random garbage should not decrypt successfully
-        var clientHandshake = BlazeSecureHandshake(role: .client)
+        let clientHandshake = BlazeSecureHandshake(role: .client)
         var serverHandshake = BlazeSecureHandshake(role: .server)
         
         let clientHello = clientHandshake.makeClientHello()
