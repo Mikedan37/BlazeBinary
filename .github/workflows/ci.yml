@@ -14,9 +14,10 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            swift-version: "5.9"
+            swift-version: "5.10"
+            xcode-version: "15.4"
           - os: ubuntu-22.04
-            swift-version: "5.9"
+            swift-version: "5.10"
     
     steps:
     - name: Checkout code
@@ -26,6 +27,7 @@ jobs:
       uses: swift-actions/setup-swift@v2
       with:
         swift-version: ${{ matrix.swift-version }}
+        xcode-version: ${{ matrix.xcode-version }}
     
     - name: Verify documentation files exist
       run: |
