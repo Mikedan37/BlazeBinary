@@ -121,16 +121,23 @@ public struct BlazeSecureSession {
     /// - Throws: `BlazeBinaryError.encryptionFailed` if decryption fails or authentication fails
     public mutating func decryptFramePayload(_ payload: Data) throws -> Data {
         // Minimum length: 1 (frameType) + 12 (nonce) + 16 (tag) = 29 bytes
+        guard !payload.isEmpty else {
+            throw BlazeBinaryError.encryptionFailed("Encrypted frame payload is empty")
+        }
+        
         guard payload.count >= 29 else {
             throw BlazeBinaryError.encryptionFailed("Encrypted frame too short: \(payload.count) bytes (minimum 29)")
         }
         
-        // Check frame type
+        // Check frame type (safe to access - we've verified payload is not empty)
         guard payload[0] == SecureFrameType.encrypted.rawValue else {
             throw BlazeBinaryError.encryptionFailed("Invalid frame type for decryption: \(payload[0]) (expected 0x01)")
         }
         
-        // Extract nonce (bytes 1-12)
+        // Extract nonce (bytes 1-12) - validate range before extraction
+        guard payload.count >= 13 else {
+            throw BlazeBinaryError.encryptionFailed("Payload too short for nonce extraction: \(payload.count) bytes (need 13)")
+        }
         let nonceData = payload.subdata(in: 1..<13)
         
         // Note: The nonce prefix in keyMaterial is only used during encryption to construct nonces.
@@ -138,11 +145,22 @@ public struct BlazeSecureSession {
         // sessions (with different nonce prefixes) to decrypt frames encrypted by other sessions
         // as long as they share the same encryption key (e.g., client/server after handshake).
         
-        // Extract tag (last 16 bytes)
+        // Extract tag (last 16 bytes) - validate we have at least 16 bytes
+        guard payload.count >= 16 else {
+            throw BlazeBinaryError.encryptionFailed("Payload too short for tag extraction: \(payload.count) bytes (need 16)")
+        }
         let tag = payload.suffix(16)
         
-        // Extract ciphertext (bytes 13 to tag start)
-        let ciphertext = payload.subdata(in: 13..<(payload.count - 16))
+        // Extract ciphertext (bytes 13 to tag start) - validate range
+        guard payload.count >= 29 else {
+            throw BlazeBinaryError.encryptionFailed("Payload too short for ciphertext extraction: \(payload.count) bytes (need 29)")
+        }
+        let ciphertextStart = 13
+        let ciphertextEnd = payload.count - 16
+        guard ciphertextStart < ciphertextEnd else {
+            throw BlazeBinaryError.encryptionFailed("Invalid ciphertext range: start=\(ciphertextStart), end=\(ciphertextEnd)")
+        }
+        let ciphertext = payload.subdata(in: ciphertextStart..<ciphertextEnd)
         
         // Construct AAD (same as encryption)
         var aad = Data()
