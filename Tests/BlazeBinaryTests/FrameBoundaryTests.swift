@@ -69,9 +69,7 @@ final class Frameboundaryteststests: XCTestCase {
             try parser.append(fillData)
             // Try to append one more byte
             let oneMoreByte = Data([0xBB])
-            XCTAssertThrowsError(try 
-                try parser.append(oneMoreByte)
-            ) { error in
+            XCTAssertThrowsError(try parser.append(oneMoreByte)) { error in
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.oversizedFrame)

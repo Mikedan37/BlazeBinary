@@ -1,7 +1,11 @@
 import XCTest
 import Foundation
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
+@testable import BlazeBinary
 
-final class BlazeBinaryEncodingTestsTests: XCTestCase {
+final class BlazeBinaryEncodingTests: XCTestCase {
 #if canImport(CoreGraphics)
 #endif
 // MARK: - Round-Trip Helper
@@ -324,6 +328,5 @@ func roundTrip<T: BlazeBinaryCodable>(_ value: T) throws -> Bool where T: Equata
     try encoder4.encode(response2)
     let data4 = encoder4.encodedData()
     XCTAssert(data3 == data4)
-}
 }
 }

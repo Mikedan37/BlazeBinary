@@ -160,9 +160,7 @@ final class Framestressteststests: XCTestCase {
             let parser = BlazeFrameParser()
             // Create data that exceeds buffer limit
             let hugeData = Data(repeating: 0xAA, count: BlazeFrameParser.maxBufferSize + 1)
-            XCTAssertThrowsError(try 
-                try parser.append(hugeData)
-            ) { error in
+            XCTAssertThrowsError(try parser.append(hugeData)) { error in
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.oversizedFrame)

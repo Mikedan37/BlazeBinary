@@ -2,10 +2,9 @@ import XCTest
 import Foundation
 @testable import BlazeBinary
 
-final class Maxsizeboundaryteststests: XCTestCase {
+final class MaxSizeBoundaryTests: XCTestCase {
     /// Tests for maximum size boundaries (near 5MB frame, near 10MB buffer).
-    struct MaxSizeBoundaryTests {
-        func testFrameAtMaxSize() throws {
+    func testFrameAtMaxSize() throws {
             // Frame exactly at 5MB limit
             let payload = Data(repeating: 0xAA, count: BlazeFrameEncoder.maxFrameSize)
             let frame = try BlazeFrameEncoder.encodeFrame(payload)
@@ -105,9 +104,7 @@ final class Maxsizeboundaryteststests: XCTestCase {
             let parser = BlazeFrameParser()
             // Try to append data that would exceed limit
             let hugeData = Data(repeating: 0xCC, count: BlazeFrameParser.maxBufferSize + 1)
-            XCTAssertThrowsError(try 
-                try parser.append(hugeData)
-            ) { error in
+            XCTAssertThrowsError(try parser.append(hugeData)) { error in
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.oversizedFrame)
@@ -130,7 +127,7 @@ final class Maxsizeboundaryteststests: XCTestCase {
             }
             // Test that count validation works
             // Create data with large count varint
-            let data = testEncodeVarint(UInt64(10 * 1024 * 1024))
+            let data = self.testEncodeVarint(UInt64(10 * 1024 * 1024))
             let decoder = BlazeBinaryDecoder(data: data, maxAllowedLength: 10 * 1024 * 1024)
             // Try to decode as array - should validate count
             XCTAssertThrowsError(try decoder.decodeArray(Item.self)) { error in
@@ -155,7 +152,7 @@ final class Maxsizeboundaryteststests: XCTestCase {
                 }
             }
             // Create encoded data with count exceeding limit
-            var data = testEncodeVarint(UInt64(11 * 1024 * 1024))
+            var data = self.testEncodeVarint(UInt64(11 * 1024 * 1024))
             // Add one item to make it partially valid
             let encoder = BlazeBinaryEncoder()
             try encoder.encode(Item(value: 1))
@@ -177,7 +174,7 @@ final class Maxsizeboundaryteststests: XCTestCase {
                 // Any error is acceptable
             }
         }
-    }
+    
     // Helper to encode varint for testing
     func testEncodeVarint(_ value: UInt64) -> Data {
         var data = Data()

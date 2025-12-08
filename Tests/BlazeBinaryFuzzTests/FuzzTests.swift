@@ -2,8 +2,9 @@ import XCTest
 import Foundation
 @testable import BlazeBinary
 
-// Fuzz test: Random byte buffers fed to BlazeFrameParser
-func fuzzFrameParser() {
+final class FuzzTests: XCTestCase {
+    // Fuzz test: Random byte buffers fed to BlazeFrameParser
+    func fuzzFrameParser() {
     for _ in 0..<1000 {
         let length = Int.random(in: 0...10000)
         var randomBytes = Data()
@@ -41,7 +42,7 @@ func fuzzFrameParser() {
 }
 
 // Fuzz test: Random byte buffers fed to BlazeBinaryDecoder
-func fuzzDecoder() {
+    func fuzzDecoder() {
     for _ in 0..<1000 {
         let length = Int.random(in: 0...10000)
         var randomBytes = Data()
@@ -70,7 +71,7 @@ func fuzzDecoder() {
 }
 
 // Fuzz test: Corrupted varints
-func fuzzCorruptedVarints() {
+    func fuzzCorruptedVarints() {
     for _ in 0..<100 {
         // Create varint with too many continuation bytes
         var corrupted = Data()
@@ -86,7 +87,7 @@ func fuzzCorruptedVarints() {
 }
 
 // Fuzz test: Oversized frames
-func fuzzOversizedFrames() {
+    func fuzzOversizedFrames() {
     for _ in 0..<100 {
         // Create frame with oversized length prefix
         var frame = Data()
@@ -106,7 +107,7 @@ func fuzzOversizedFrames() {
 }
 
 // Fuzz test: Negative/zero lengths
-func fuzzInvalidLengths() {
+    func fuzzInvalidLengths() {
     // Zero length frame
     var zeroFrame = Data()
     let zeroLength = UInt32(0).bigEndian
@@ -124,7 +125,7 @@ func fuzzInvalidLengths() {
 }
 
 // Fuzz test: Partial/truncated frames
-func fuzzPartialFrames() throws {
+    func fuzzPartialFrames() throws {
     for _ in 0..<100 {
         let payload = Data(repeating: 0x42, count: 1000)
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
@@ -155,7 +156,7 @@ func fuzzPartialFrames() throws {
 }
 
 // Fuzz test: Packed garbage data
-func fuzzPackedGarbage() {
+    func fuzzPackedGarbage() {
     for _ in 0..<500 {
         let length = Int.random(in: 100...5000)
         var garbage = Data()
@@ -191,7 +192,7 @@ func fuzzPackedGarbage() {
 }
 
 // Fuzz test: Stress test with many operations
-func fuzzStressTest() {
+    func fuzzStressTest() {
     let encoder = BlazeBinaryEncoder()
     var randomValues: [Int] = []
     
@@ -220,3 +221,4 @@ func fuzzStressTest() {
     }
 }
 
+}

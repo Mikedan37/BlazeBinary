@@ -2,11 +2,10 @@ import XCTest
 import Foundation
 @testable import BlazeBinary
 
-final class Conformanceteststests: XCTestCase {
+final class ConformanceTests: XCTestCase {
     /// Conformance tests verifying the rules in FaultToleranceChecklist.md.
-    struct ConformanceTests {
-        // MARK: - Encoder Invariants
-        func testEncoderDeterministicOutput() throws {
+    // MARK: - Encoder Invariants
+    func testEncoderDeterministicOutput() throws {
             // Same input always produces same output
             let value = 42
             var previousData: Data?
@@ -78,9 +77,7 @@ final class Conformanceteststests: XCTestCase {
             // Every read validates bounds
             let data = Data([0x01, 0x02]) // Only 2 bytes
             let decoder = BlazeBinaryDecoder(data: data)
-            XCTAssertThrowsError(try 
-                _ = try decoder.decodeUInt32() // Needs 4 bytes
-            ) { error in
+            XCTAssertThrowsError(try decoder.decodeUInt32()) { error in // Needs 4 bytes
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.truncated)
@@ -140,10 +137,8 @@ final class Conformanceteststests: XCTestCase {
         func testFrameParserBufferSizeLimit() throws {
             // Buffer never exceeds maxBufferSize
             let parser = BlazeFrameParser()
-            XCTAssertThrowsError(try 
-                let hugeData = Data(repeating: 0xAA, count: BlazeFrameParser.maxBufferSize + 1)
-                try parser.append(hugeData)
-            ) { error in
+            let hugeData = Data(repeating: 0xAA, count: BlazeFrameParser.maxBufferSize + 1)
+            XCTAssertThrowsError(try parser.append(hugeData)) { error in
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.oversizedFrame)
@@ -201,9 +196,7 @@ final class Conformanceteststests: XCTestCase {
         func testBoundsCheckUInt32() throws {
             let data = Data([0x01, 0x02, 0x03]) // Only 3 bytes
             let decoder = BlazeBinaryDecoder(data: data)
-            XCTAssertThrowsError(try 
-                _ = try decoder.decodeUInt32() // Needs 4
-            ) { error in
+            XCTAssertThrowsError(try decoder.decodeUInt32()) { error in // Needs 4
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.truncated)
@@ -213,9 +206,7 @@ final class Conformanceteststests: XCTestCase {
         func testBoundsCheckUInt64() throws {
             let data = Data([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07]) // Only 7 bytes
             let decoder = BlazeBinaryDecoder(data: data)
-            XCTAssertThrowsError(try 
-                _ = try decoder.decodeUInt64() // Needs 8
-            ) { error in
+            XCTAssertThrowsError(try decoder.decodeUInt64()) { error in // Needs 8
                 XCTAssertTrue(error is BlazeBinaryError)
                 if let bbError = error as? BlazeBinaryError {
                     XCTAssertEqual(bbError, BlazeBinaryError.truncated)
@@ -304,7 +295,6 @@ final class Conformanceteststests: XCTestCase {
                 }
             }
         }
-    }
     // Helper to encode varint for testing
     func testEncodeVarintHelper(_ value: UInt64) -> Data {
         var data = Data()
