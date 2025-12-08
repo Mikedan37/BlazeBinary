@@ -183,28 +183,17 @@ public struct BlazeSecureSession {
             return value
         }
         
-        // Strict replay protection: reject nonces with counter <= recvCounter
-        // Exception: Allow counter == recvCounter == 0 for the very first frame only
-        // After that, counters must be strictly increasing (counter > recvCounter)
-        if strictReplayProtection {
-            if counter < recvCounter {
-                // Counter is less than highest seen - definitely a replay
-                throw CryptoError.nonceReuse
-            } else if counter == recvCounter {
-                // Counter equals highest seen
-                if recvCounter == 0 {
-                    // First frame: counter 0 == recvCounter 0, allow it
-                    // Will be updated to 1 below
-                } else {
-                    // Not first frame: counter == recvCounter means replay
-                    throw CryptoError.nonceReuse
-                }
-            }
-            // Allow: counter > recvCounter (normal case)
+        // Strict replay protection: reject nonces with counter < recvCounter
+        // Allow counter >= recvCounter (next expected frame or future frame)
+        // This ensures strictly monotonic counters while allowing the next expected frame
+        if strictReplayProtection && counter < recvCounter {
+            // Counter is less than highest seen - definitely a replay
+            throw CryptoError.nonceReuse
         }
         
         // Update receive counter (strictly monotonic)
-        // Set to counter + 1 to ensure next frame must have counter > current
+        // Set to counter + 1 to ensure next frame must have counter >= recvCounter
+        // This prevents accepting the same counter twice
         recvCounter = counter + 1
         
         return plaintext
