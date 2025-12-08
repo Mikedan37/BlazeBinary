@@ -115,15 +115,21 @@ public class BlazeFrameParser {
         
         // Extract frame payload before modifying buffer
         // Force an explicit copy to avoid issues with buffer modification on Linux
-        // Copy bytes explicitly into a new array using copyMemory
-        // This ensures the payload is completely independent of the buffer
+        // Extract bytes using withUnsafeBytes and copyMemory to ensure complete independence
         var payloadBytes = [UInt8](repeating: 0, count: lengthInt)
         buffer.withUnsafeBytes { bufferBytes in
-            let payloadSlice = UnsafeRawBufferPointer(rebasing: bufferBytes[4..<totalFrameSize])
+            let payloadStartIndex = 4
+            guard bufferBytes.count >= payloadStartIndex + lengthInt,
+                  let baseAddress = bufferBytes.baseAddress else {
+                return
+            }
+            let payloadSourcePtr = baseAddress.advanced(by: payloadStartIndex)
+            let payloadSource = UnsafeRawBufferPointer(start: payloadSourcePtr, count: lengthInt)
             payloadBytes.withUnsafeMutableBytes { payloadPtr in
-                payloadPtr.copyMemory(from: payloadSlice)
+                payloadPtr.copyMemory(from: payloadSource)
             }
         }
+        // Create new Data from the copied array - completely independent of buffer
         let payload = Data(payloadBytes)
         
         // Remove processed frame from buffer

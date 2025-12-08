@@ -26,10 +26,10 @@ func testDeterministicEncoding_sameInput_sameOutput() throws {
         var data: Data
         
         func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
-            try encoder.encode(id)
-            try encoder.encode(count)
-            try encoder.encode(active)
-            try encoder.encode(data)
+            encoder.encode(id)
+            encoder.encode(count)
+            encoder.encode(active)
+            encoder.encode(data)
         }
         
         init(from decoder: BlazeBinaryDecoder) throws {

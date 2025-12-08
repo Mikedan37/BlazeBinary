@@ -88,7 +88,6 @@ final class DecoderTestsTests: XCTestCase {
         }
 }
     func testDecodeOversizedData() throws {
-        let encoder = BlazeBinaryEncoder()
         // Encode a length that exceeds maxAllowedLength
         let hugeLength = UInt64(20 * 1024 * 1024) // 20 MB
         var data = Data()

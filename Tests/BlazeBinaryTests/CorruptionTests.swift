@@ -19,7 +19,7 @@ final class CorruptionTests: XCTestCase {
     func testDecoderRejectsTruncatedRecord() throws {
         // Create a valid encoded record
         let encoder = BlazeBinaryEncoder()
-        try encoder.encode("Hello, World!")
+        encoder.encode("Hello, World!")
         let validData = encoder.encodedData()
         
         // Test various truncation points

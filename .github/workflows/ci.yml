@@ -12,8 +12,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-22.04]
-        swift-version: ["5.9"]
+        include:
+          - os: macos-13
+            swift-version: "5.9"
+          - os: ubuntu-22.04
+            swift-version: "5.9"
     
     steps:
     - name: Checkout code

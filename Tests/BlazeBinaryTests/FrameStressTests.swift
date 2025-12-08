@@ -12,7 +12,7 @@ final class Framestressteststests: XCTestCase {
             // Split frame into random chunks
             var chunks: [Data] = []
             var remaining = frame
-            var chunkSizes = [100, 200, 150, 300, 250] // Various chunk sizes
+            let chunkSizes = [100, 200, 150, 300, 250] // Various chunk sizes
             for chunkSize in chunkSizes {
                 if remaining.count <= chunkSize {
                     chunks.append(remaining)

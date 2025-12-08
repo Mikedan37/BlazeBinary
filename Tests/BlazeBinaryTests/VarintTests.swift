@@ -71,7 +71,7 @@ final class VarintTestsTests: XCTestCase {
             (-128, 255)
         ]
         
-        for (signed, expectedZigzag) in testCases {
+        for (signed, _) in testCases {
             let encoder = BlazeBinaryEncoder()
             encoder.encode(signed)
             let data = encoder.encodedData()

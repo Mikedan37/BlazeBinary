@@ -129,7 +129,7 @@ final class Frameboundaryteststests: XCTestCase {
             let result1 = try parser.nextFrame()
             XCTAssert(result1 == nil)
             // State should be consistent - can continue
-            let bufferSizeBefore = parser.bufferSize
+            _ = parser.bufferSize
             try parser.append(frame.suffix(from: 5))
             let result2 = try parser.nextFrame()
             XCTAssert(result2 == payload)
