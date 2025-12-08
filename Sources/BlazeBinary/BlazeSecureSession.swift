@@ -37,7 +37,9 @@ public struct BlazeSecureSession {
     private var sendCounter: UInt64
     
     /// Receive counter (used for strict replay protection)
-    /// Frames with counter <= recvCounter are rejected
+    /// Frames with counter < recvCounter are rejected (replays)
+    /// Frames with counter == recvCounter are allowed (next expected frame)
+    /// Frames with counter > recvCounter are allowed (future frames, out of order)
     private var recvCounter: UInt64
     
     /// Enable strict replay protection (reject nonces with counter <= recvCounter)
@@ -222,23 +224,19 @@ public struct BlazeSecureSession {
             return value
         }
         
-        // Strict replay protection: reject nonces with counter < recvCounter or counter == recvCounter (duplicate)
-        // Allow counter > recvCounter (future frame)
-        // This ensures strictly monotonic counters
+        // Strict replay protection: reject nonces with counter < recvCounter
+        // Allow counter >= recvCounter (next expected frame or future frame)
+        // This ensures strictly monotonic counters while allowing sequential frames
         if strictReplayProtection {
             if counter < recvCounter {
-                // Counter is less than highest seen - definitely a replay
+                // Counter is less than expected - definitely a replay
                 throw BlazeBinaryError.encryptionFailed("Replay detected: counter \(counter) < recvCounter \(recvCounter)")
-            }
-            if counter == recvCounter && recvCounter > 0 {
-                // Duplicate frame (same counter as last frame) - also a replay
-                throw BlazeBinaryError.encryptionFailed("Replay detected: duplicate frame with counter \(counter)")
             }
         }
         
         // Update receive counter (strictly monotonic)
-        // Set to counter + 1 to ensure next frame must have counter > recvCounter
-        // This prevents accepting the same counter twice
+        // Set to counter + 1 to ensure next frame must have counter >= recvCounter
+        // This prevents accepting frames with counter < recvCounter (replays)
         recvCounter = counter + 1
         
         return plaintext
