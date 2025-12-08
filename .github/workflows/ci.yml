@@ -44,7 +44,21 @@ jobs:
         echo "All required documentation files exist"
     
     - name: Resolve dependencies
-      run: swift package resolve
+      run: |
+        # Retry dependency resolution in case of network issues
+        for i in 1 2 3; do
+          if swift package resolve; then
+            echo "Dependencies resolved successfully"
+            break
+          else
+            echo "Attempt $i failed, retrying..."
+            if [ $i -eq 3 ]; then
+              echo "All retry attempts failed"
+              exit 1
+            fi
+            sleep 2
+          fi
+        done
     
     - name: Build
       run: swift build
