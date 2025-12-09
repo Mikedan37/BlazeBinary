@@ -74,6 +74,12 @@ public class BlazeIncrementalDecoder {
         }
         
         // Check if we have the complete field
+        // Validate that length can fit in Int before conversion
+        guard length <= UInt64(Int.max) else {
+            offset = savedOffset
+            throw BlazeBinaryError.decodeFailed("Field length \(length) exceeds Int.max")
+        }
+        
         let lengthInt = Int(length)
         guard lengthInt <= maxAllowedLength else {
             offset = savedOffset
@@ -154,14 +160,21 @@ public class BlazeIncrementalDecoder {
             }
         }
         
-        guard count <= maxAllowedLength else {
+        // Validate that count can fit in Int before conversion
+        guard count <= UInt64(Int.max) else {
+            offset = savedOffset
+            throw BlazeBinaryError.decodeFailed("Array count \(count) exceeds Int.max")
+        }
+        
+        guard count <= UInt64(maxAllowedLength) else {
             offset = savedOffset
             throw BlazeBinaryError.decodeFailed("Array count \(count) exceeds maximum \(maxAllowedLength)")
         }
         
         // Process elements incrementally
         var processed = 0
-        for _ in 0..<count {
+        let countInt = Int(count)
+        for _ in 0..<countInt {
             // For each element, we need to decode it completely
             // This is a simplified version - in practice, you'd need to know the element structure
             // For now, we'll just track that we're processing
