@@ -187,7 +187,8 @@ public extension BlazeBinaryError {
     var cryptoError: CryptoError? {
         switch self {
         case .encryptionFailed(let msg):
-            if msg.contains("authentication") || msg.contains("tag") {
+            let lowerMsg = msg.lowercased()
+            if lowerMsg.contains("authentication") || lowerMsg.contains("tag") {
                 return .authenticationFailed
             }
             return .decryptionFailed(msg)

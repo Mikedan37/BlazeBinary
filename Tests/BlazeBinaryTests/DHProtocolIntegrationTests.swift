@@ -133,12 +133,15 @@ final class DHProtocolIntegrationTests: XCTestCase {
         
         // Swift Crypto may or may not reject all-zero keys immediately
         // Test that it either rejects or fails during key derivation
-        let didThrow = (try? handshake.receiveRemotePublicKey(zeroKeyMessage)) == nil
-        if !didThrow {
+        do {
+            try handshake.receiveRemotePublicKey(zeroKeyMessage)
             // If accepted, derivation should fail
             XCTAssertThrowsError(try handshake.deriveSessionKeys()) { error in
                 XCTAssertTrue(error is BlazeBinaryError)
             }
+        } catch {
+            // If rejected immediately, that's also acceptable
+            XCTAssertTrue(error is BlazeBinaryError)
         }
     }
     

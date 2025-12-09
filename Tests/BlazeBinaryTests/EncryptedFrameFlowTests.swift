@@ -80,7 +80,16 @@ final class EncryptedFrameFlowTests: XCTestCase {
         let payload = Data(repeating: 0x42, count: 1000)
         
         // Compress then encrypt
-        let compressed = try BlazeCompression.compress(payload, mode: .lz4)
+        let compressed: Data
+        do {
+            compressed = try BlazeCompression.compress(payload, mode: .lz4)
+        } catch let error as BlazeBinaryError {
+            if case .decodeFailed(let message) = error, message.contains("not supported") {
+                throw XCTSkip("LZ4 compression not supported on this platform")
+            }
+            throw error
+        }
+        
         let encrypted = try session.makeEncryptedFrame(from: compressed)
         
         // Decrypt then decompress
