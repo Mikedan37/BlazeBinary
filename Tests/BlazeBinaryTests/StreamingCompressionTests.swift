@@ -12,7 +12,15 @@ import XCTest
 final class StreamingCompressionTests: XCTestCase {
     
     func testStreamingCompressionRoundTrip() throws {
-        let compressor = try BlazeStreamingCompressor(mode: .lz4, chunkSize: 1024)
+        let compressor: BlazeStreamingCompressor
+        do {
+            compressor = try BlazeStreamingCompressor(mode: .lz4, chunkSize: 1024)
+        } catch let error as BlazeBinaryError {
+            if case .decodeFailed(let message) = error, message.contains("not supported") {
+                throw XCTSkip("LZ4 compression not supported on this platform")
+            }
+            throw error
+        }
         
         // Compress in chunks (accumulates until chunkSize, then compresses)
         let chunk1 = Data(repeating: 0xAA, count: 500)
@@ -42,7 +50,15 @@ final class StreamingCompressionTests: XCTestCase {
     }
     
     func testStreamingCompressionLargeData() throws {
-        let compressor = try BlazeStreamingCompressor(mode: .lz4, chunkSize: 64 * 1024)
+        let compressor: BlazeStreamingCompressor
+        do {
+            compressor = try BlazeStreamingCompressor(mode: .lz4, chunkSize: 64 * 1024)
+        } catch let error as BlazeBinaryError {
+            if case .decodeFailed(let message) = error, message.contains("not supported") {
+                throw XCTSkip("LZ4 compression not supported on this platform")
+            }
+            throw error
+        }
         
         // Compress large data in chunks
         var allCompressed = Data()
@@ -64,7 +80,15 @@ final class StreamingCompressionTests: XCTestCase {
     }
     
     func testStreamingCompressionLZFSE() throws {
-        let compressor = try BlazeStreamingCompressor(mode: .lzfse, chunkSize: 1024)
+        let compressor: BlazeStreamingCompressor
+        do {
+            compressor = try BlazeStreamingCompressor(mode: .lzfse, chunkSize: 1024)
+        } catch let error as BlazeBinaryError {
+            if case .decodeFailed(let message) = error, message.contains("not supported") {
+                throw XCTSkip("LZFSE compression not supported on this platform")
+            }
+            throw error
+        }
         
         let data = Data(repeating: 0xAA, count: 2000)
         let compressed = try compressor.compress(data)
