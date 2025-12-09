@@ -151,7 +151,7 @@ let schemaVersion = decoder.version // Detected from data
 
 ## Examples
 
-### ✅ Safe Upgrades
+### Met Safe Upgrades
 
 ```swift
 // v1.3.0 → v1.3.1 (patch)
@@ -162,7 +162,7 @@ let schemaVersion = decoder.version // Detected from data
 // Existing code works unchanged
 ```
 
-### ⚠️ Requires Migration
+### Warning Requires Migration
 
 ```swift
 // v1.3.0 → v2.0.0 (major)

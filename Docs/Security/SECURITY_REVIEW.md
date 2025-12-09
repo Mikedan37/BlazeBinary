@@ -144,32 +144,32 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 
 ## Security Guarantees
 
-### ✅ Provided Guarantees
+### Met Provided Guarantees
 
 | Guarantee | Status | Implementation |
 |-----------|--------|----------------|
-| **Confidentiality** | ✅ Yes | ChaCha20 encryption |
-| **Authentication** | ✅ Yes | Poly1305 tag verification |
-| **Perfect Forward Secrecy** | ✅ Yes | Ephemeral X25519 keys |
-| **Replay Protection** | ✅ Yes | Strict counter validation |
-| **Nonce Uniqueness** | ✅ Yes | Counter + random prefix |
-| **Key Independence** | ✅ Yes | HKDF key derivation |
-| **Memory Safety** | ✅ Yes | Swift memory management |
+| **Confidentiality** | Met Yes | ChaCha20 encryption |
+| **Authentication** | Met Yes | Poly1305 tag verification |
+| **Perfect Forward Secrecy** | Met Yes | Ephemeral X25519 keys |
+| **Replay Protection** | Met Yes | Strict counter validation |
+| **Nonce Uniqueness** | Met Yes | Counter + random prefix |
+| **Key Independence** | Met Yes | HKDF key derivation |
+| **Memory Safety** | Met Yes | Swift memory management |
 
-### ⚠️ Partial Guarantees
+### Warning Partial Guarantees
 
 | Guarantee | Status | Notes |
 |-----------|--------|-------|
-| **MITM Protection** | ⚠️ Partial | No public key authentication |
-| **Side-Channel Resistance** | ⚠️ Partial | Not specifically hardened |
+| **MITM Protection** | Warning Partial | No public key authentication |
+| **Side-Channel Resistance** | Warning Partial | Not specifically hardened |
 
-### ❌ Non-Goals
+### Non-Goals
 
 | Feature | Status | Rationale |
 |---------|--------|-----------|
-| **Public Key Authentication** | ❌ No | Out of scope (use certificates) |
-| **Side-Channel Hardening** | ❌ No | Not required for most use cases |
-| **Post-Quantum Security** | ❌ No | Current primitives are classical |
+| **Public Key Authentication** | No | Out of scope (use certificates) |
+| **Side-Channel Hardening** | No | Not required for most use cases |
+| **Post-Quantum Security** | No | Current primitives are classical |
 
 ## Attack Vectors & Mitigations
 
@@ -182,7 +182,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - Reject nonces with counter <= recvCounter
 - Session closure on replay detection
 
-**Status**: ✅ Mitigated
+**Status**: Met Mitigated
 
 ### 2. Man-in-the-Middle (MITM)
 
@@ -192,7 +192,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - None (out of scope)
 - **Recommendation**: Use out-of-band key verification or certificates
 
-**Status**: ⚠️ Not mitigated (by design)
+**Status**: Warning Not mitigated (by design)
 
 ### 3. Nonce Reuse
 
@@ -203,7 +203,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - Strictly monotonic counters
 - Replay protection
 
-**Status**: ✅ Mitigated
+**Status**: Met Mitigated
 
 ### 4. Tag Forgery
 
@@ -214,7 +214,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - Tag verification is constant-time (swift-crypto)
 - Connection dropped on tag failure
 
-**Status**: ✅ Mitigated
+**Status**: Met Mitigated
 
 ### 5. Key Compromise
 
@@ -225,7 +225,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - Old sessions remain secure
 - New handshake required for new session
 
-**Status**: ✅ Mitigated (PFS)
+**Status**: Met Mitigated (PFS)
 
 ### 6. Resource Exhaustion
 
@@ -236,7 +236,7 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 - Immediate rejection of oversized frames
 - Connection drop on violation
 
-**Status**: ✅ Mitigated
+**Status**: Met Mitigated
 
 ## Constant-Time Operations
 
@@ -304,13 +304,13 @@ For high-security deployments:
 
 ### For Production Use
 
-1. ✅ **Enable Strict Replay Protection**: Default enabled
-2. ✅ **Use Ephemeral Keys**: Default behavior
-3. ✅ **Validate Frame Types**: Check all frame types
-4. ✅ **Monitor Errors**: Log crypto errors
-5. ✅ **Rotate Sessions**: Periodically re-handshake
-6. ⚠️ **Verify Keys**: Use out-of-band verification for MITM protection
-7. ⚠️ **Use TLS**: For additional transport security (if needed)
+1. Met **Enable Strict Replay Protection**: Default enabled
+2. Met **Use Ephemeral Keys**: Default behavior
+3. Met **Validate Frame Types**: Check all frame types
+4. Met **Monitor Errors**: Log crypto errors
+5. Met **Rotate Sessions**: Periodically re-handshake
+6. Warning **Verify Keys**: Use out-of-band verification for MITM protection
+7. Warning **Use TLS**: For additional transport security (if needed)
 
 ### For High-Security Deployments
 

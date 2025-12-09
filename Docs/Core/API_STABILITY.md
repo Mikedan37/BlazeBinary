@@ -6,7 +6,7 @@ This document defines the API stability guarantees for BlazeBinary Protocol v1.3
 
 ## Stability Levels
 
-### 🔒 Stable APIs (v1.3+)
+###  Stable APIs (v1.3+)
 
 These APIs are **frozen** and will not change in incompatible ways. Breaking changes will only occur in major version bumps (v2.0+).
 
@@ -122,7 +122,7 @@ These APIs are **frozen** and will not change in incompatible ways. Breaking cha
   - `compress(_:mode:) throws -> Data`
   - `decompress(_:mode:originalSize:) throws -> Data`
 
-### ⚠️ Experimental APIs
+### Warning Experimental APIs
 
 These APIs may change in minor versions (v1.4, v1.5, etc.):
 
@@ -133,7 +133,7 @@ These APIs may change in minor versions (v1.4, v1.5, etc.):
 - `HandwritingContinuationRequest` struct
 - `HandwritingContinuationResponse` struct
 
-### 🔧 Internal APIs
+###  Internal APIs
 
 These are not part of the public API and may change at any time:
 
@@ -197,7 +197,7 @@ Future versions will maintain backwards compatibility for decoding v1.3 data.
 
 ## Examples
 
-### ✅ Safe to Use (Stable)
+### Met Safe to Use (Stable)
 
 ```swift
 let encoder = BlazeBinaryEncoder()
@@ -208,14 +208,14 @@ let decoder = BlazeBinaryDecoder(data: data)
 let value = try decoder.decodeInt()
 ```
 
-### ⚠️ May Change (Experimental)
+### Warning May Change (Experimental)
 
 ```swift
 let incremental = BlazeIncrementalDecoder()
 // This API may change in v1.4+
 ```
 
-### ❌ Not Public API
+### Not Public API
 
 ```swift
 // Don't rely on internal implementation details

@@ -92,14 +92,14 @@ For continuous performance tracking with GitHub Actions:
 
 | Operation | Target p50 | Target p99 | Status |
 |-----------|------------|------------|--------|
-| Varint encode (small) | < 1 μs | < 5 μs | ✅ Met |
-| Varint decode (small) | < 1 μs | < 5 μs | ✅ Met |
-| Data encode (1KB) | < 5 μs | < 20 μs | ✅ Met |
-| Data decode (1KB) | < 5 μs | < 20 μs | ✅ Met |
-| Frame encode (1KB) | < 6 μs | < 25 μs | ✅ Met |
-| Frame decode (1KB) | < 6 μs | < 25 μs | ✅ Met |
-| AEAD encrypt (1KB) | < 100 μs | < 500 μs | ✅ Met |
-| AEAD decrypt (1KB) | < 100 μs | < 500 μs | ✅ Met |
+| Varint encode (small) | < 1 μs | < 5 μs | Met Met |
+| Varint decode (small) | < 1 μs | < 5 μs | Met Met |
+| Data encode (1KB) | < 5 μs | < 20 μs | Met Met |
+| Data decode (1KB) | < 5 μs | < 20 μs | Met Met |
+| Frame encode (1KB) | < 6 μs | < 25 μs | Met Met |
+| Frame decode (1KB) | < 6 μs | < 25 μs | Met Met |
+| AEAD encrypt (1KB) | < 100 μs | < 500 μs | Met Met |
+| AEAD decrypt (1KB) | < 100 μs | < 500 μs | Met Met |
 
 ## Regression Detection
 

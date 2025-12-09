@@ -545,10 +545,10 @@ let decompressed = try parser.nextFrame() // Automatically decompressed based on
 - False positives caused test failures
 
 **v2.0 Explicit Mode Benefits**:
-- ✅ Deterministic: compression mode always explicit
-- ✅ No false positives: no heuristics or detection
-- ✅ Cleaner code: removed ~200 lines of detection logic
-- ✅ Matches mature protocols: QUIC, gRPC, Protobuf, Cap'n Proto
+- Deterministic: compression mode always explicit
+- No false positives: no heuristics or detection
+- Cleaner code: removed ~200 lines of detection logic
+- Matches mature protocols: QUIC, gRPC, Protobuf, Cap'n Proto
 
 **Note**: There is a known limitation: Uncompressed payloads starting with `0x01` or `0x02` might be misinterpreted. In practice, this is rare and can be avoided by using compression when needed.
 

@@ -251,81 +251,18 @@ graph LR
 
 | Operation | p50 Target | p90 Target | p99 Target | Status |
 |-----------|------------|------------|------------|--------|
-| Varint encode (small) | < 1 μs | < 2 μs | < 5 μs | ✅ Met |
-| Varint decode (small) | < 1 μs | < 2 μs | < 5 μs | ✅ Met |
-| Data encode (1KB) | < 5 μs | < 10 μs | < 20 μs | ✅ Met |
-| Data decode (1KB) | < 5 μs | < 10 μs | < 20 μs | ✅ Met |
-| Frame encode (1KB) | < 6 μs | < 12 μs | < 25 μs | ✅ Met |
-| Frame decode (1KB) | < 6 μs | < 12 μs | < 25 μs | ✅ Met |
-| AEAD encrypt (1KB) | < 100 μs | < 200 μs | < 500 μs | ✅ Met |
-| AEAD decrypt (1KB) | < 100 μs | < 200 μs | < 500 μs | ✅ Met |
+| Varint encode (small) | < 1 μs | < 2 μs | < 5 μs | Met |
+| Varint decode (small) | < 1 μs | < 2 μs | < 5 μs | Met |
+| Data encode (1KB) | < 5 μs | < 10 μs | < 20 μs | Met |
+| Data decode (1KB) | < 5 μs | < 10 μs | < 20 μs | Met |
+| Frame encode (1KB) | < 6 μs | < 12 μs | < 25 μs | Met |
+| Frame decode (1KB) | < 6 μs | < 12 μs | < 25 μs | Met |
+| AEAD encrypt (1KB) | < 100 μs | < 200 μs | < 500 μs | Met |
+| AEAD decrypt (1KB) | < 100 μs | < 200 μs | < 500 μs | Met |
 
-## Table 4: Transport Protocol Comparison (TCP vs UDP)
+## Note on Transport Protocols
 
-BlazeBinary works over any transport protocol. This table compares performance over TCP vs UDP:
-
-| Frame Size | Protocol | Throughput (frames/sec) | Bandwidth (MB/s) | Latency p50 (ms) | Overhead (bytes) |
-|------------|----------|------------------------|-------------------|------------------|------------------|
-| 100 bytes  | TCP      | ~50,000                | ~5.0              | ~0.05            | 54               |
-| 100 bytes  | UDP      | ~60,000                | ~6.0              | ~0.03            | 42               |
-| 1 KB       | TCP      | ~25,000                | ~25.0             | ~0.10            | 54               |
-| 1 KB       | UDP      | ~30,000                | ~30.0             | ~0.08            | 42               |
-| 8 KB       | TCP      | ~5,000                 | ~40.0             | ~0.50            | 54               |
-| 8 KB       | UDP      | ~6,000                 | ~48.0             | ~0.40            | 42               |
-
-### Key Observations
-
-1. **UDP has lower overhead**: 42 bytes vs TCP's 54 bytes (22% reduction)
-2. **UDP has higher throughput**: 10-20% faster for small/medium frames
-3. **UDP has lower latency**: 20-40% lower p50 latency
-4. **TCP is more reliable**: Guaranteed delivery, ordering, no duplicates
-5. **UDP is faster but unreliable**: May drop packets, out-of-order delivery
-
-### When to Use TCP
-
-- ✅ Need guaranteed delivery
-- ✅ Need ordered delivery
-- ✅ High packet loss environments
-- ✅ WAN/mobile networks
-- ✅ Standard protocol compatibility
-
-### When to Use UDP
-
-- ✅ Low packet loss (datacenter, local network)
-- ✅ Can tolerate packet loss (real-time, gaming)
-- ✅ Need lowest latency
-- ✅ Need highest throughput
-- ✅ Application handles reliability
-
-### Overhead Breakdown
-
-**TCP Overhead**:
-- TCP header: 20 bytes
-- IP header: 20 bytes
-- Ethernet header: 14 bytes
-- **Total: 54 bytes**
-
-**UDP Overhead**:
-- UDP header: 8 bytes
-- IP header: 20 bytes
-- Ethernet header: 14 bytes
-- **Total: 42 bytes**
-
-**Savings with UDP**: 12 bytes per frame (22% reduction)
-
-### Performance Impact
-
-For **small frames (100 bytes)**:
-- TCP overhead: 54% (54/100)
-- UDP overhead: 42% (42/100)
-- **UDP is 12% more efficient**
-
-For **large frames (8KB)**:
-- TCP overhead: 0.66% (54/8192)
-- UDP overhead: 0.51% (42/8192)
-- **UDP is 0.15% more efficient** (negligible)
-
-**Conclusion**: UDP provides significant benefits for small frames, but the difference becomes negligible for large frames.
+BlazeBinary is transport-agnostic and works with any byte stream (TCP, UDP, IPC, shared memory, files, etc.). Transport protocol selection and benchmarking should be done at the application level, not within BlazeBinary.
 
 ## Running Benchmarks
 
@@ -355,37 +292,6 @@ Varint encode (small: 42):
     min: 0.12 μs
     max: 2.40 μs
 
-=== Transport Benchmarks (TCP vs UDP) ===
-Testing small frames (100 bytes)...
-  TCP benchmark completed
-  UDP benchmark completed
-
-=== TCP vs UDP Comparison (Frame Size: 100 bytes) ===
-
-Throughput:
-  TCP:  50000.00 frames/sec
-  UDP:  60000.00 frames/sec
-  Diff: 20.00% (UDP faster)
-
-Bandwidth:
-  TCP:  5.00 MB/s
-  UDP:  6.00 MB/s
-  Diff: 20.00% (UDP faster)
-
-Latency (p50):
-  TCP:  0.050 ms
-  UDP:  0.030 ms
-  Diff: -40.00% (UDP faster)
-
-Overhead:
-  TCP:  54 bytes header (35.06%)
-  UDP:  42 bytes header (29.58%)
-  Diff: -12 bytes (UDP smaller)
-
-Summary:
-  ✅ UDP has 20.0% higher throughput
-  ✅ UDP has 40.0% lower latency
-  ✅ UDP has 12 bytes less overhead
 ```
 
 ## Benchmark Results Export

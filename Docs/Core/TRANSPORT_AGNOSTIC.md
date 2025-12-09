@@ -24,13 +24,13 @@ let message = try decoder.decodeString()
 ```
 
 **Works with**:
-- ✅ TCP
-- ✅ UDP
-- ✅ Unix sockets (IPC)
-- ✅ Shared memory
-- ✅ Files
-- ✅ Message queues
-- ✅ Any byte stream
+- TCP
+- UDP
+- Unix sockets (IPC)
+- Shared memory
+- Files
+- Message queues
+- Any byte stream
 
 ### 2. Frame Protocol (Transport-Agnostic)
 
@@ -49,11 +49,11 @@ if let payload = try parser.nextFrame() {
 ```
 
 **Works with**:
-- ✅ TCP (byte stream)
-- ✅ UDP (datagrams - one frame per datagram)
-- ✅ Unix sockets
-- ✅ Shared memory
-- ✅ Any byte stream
+- TCP (byte stream)
+- UDP (datagrams - one frame per datagram)
+- Unix sockets
+- Shared memory
+- Any byte stream
 
 **Note**: The frame protocol is just a way to delimit messages. It doesn't care how the bytes are delivered.
 
@@ -71,11 +71,11 @@ let decrypted = try session.decryptFramePayload(encrypted)
 ```
 
 **Works with**:
-- ✅ TCP
-- ✅ UDP
-- ✅ IPC
-- ✅ Shared memory
-- ✅ Any transport
+- TCP
+- UDP
+- IPC
+- Shared memory
+- Any transport
 
 **Note**: Encryption is **end-to-end**. It doesn't depend on the transport layer.
 
@@ -231,30 +231,30 @@ if let payload = try parser.nextFrame() {
 
 BlazeBinary does **NOT** provide:
 
-1. ❌ **Transport protocol** (TCP, UDP, etc.) - You provide this
-2. ❌ **Connection management** - You handle connections
-3. ❌ **Reliability** (retransmission, ordering) - Transport provides this
-4. ❌ **Flow control** - Transport provides this
-5. ❌ **Network addressing** - Transport provides this
+1. **Transport protocol** (TCP, UDP, etc.) - You provide this
+2. **Connection management** - You handle connections
+3. **Reliability** (retransmission, ordering) - Transport provides this
+4. **Flow control** - Transport provides this
+5. **Network addressing** - Transport provides this
 
 ## What BlazeBinary DOES Provide
 
 BlazeBinary provides:
 
-1. ✅ **Encoding/Decoding** - Convert values ↔ bytes
-2. ✅ **Frame Delimiting** - Know where messages start/end
-3. ✅ **Compression** - Optional LZ4/LZFSE compression
-4. ✅ **Encryption** - Optional ChaCha20-Poly1305 encryption
-5. ✅ **Determinism** - Same input → same bytes
+1. **Encoding/Decoding** - Convert values ↔ bytes
+2. **Frame Delimiting** - Know where messages start/end
+3. **Compression** - Optional LZ4/LZFSE compression
+4. **Encryption** - Optional ChaCha20-Poly1305 encryption
+5. **Determinism** - Same input → same bytes
 
 ## Security Layer
 
 The **BlazeSecureSession** layer provides:
 
-- ✅ **End-to-end encryption** - ChaCha20-Poly1305 AEAD
-- ✅ **Key exchange** - X25519 Diffie-Hellman
-- ✅ **Authentication** - Poly1305 MAC
-- ✅ **Replay protection** - Nonce-based
+- **End-to-end encryption** - ChaCha20-Poly1305 AEAD
+- **Key exchange** - X25519 Diffie-Hellman
+- **Authentication** - Poly1305 MAC
+- **Replay protection** - Nonce-based
 
 **Important**: This is **application-layer security**, not transport-layer security.
 
@@ -312,19 +312,19 @@ Or use **either**:
 
 ## Common Misconceptions
 
-### ❌ "BlazeBinary requires TCP"
+### "BlazeBinary requires TCP"
 
 **Reality**: BlazeBinary works with **any** transport. TCP is just one option.
 
-### ❌ "BlazeBinary provides networking"
+### "BlazeBinary provides networking"
 
 **Reality**: BlazeBinary provides encoding/decoding and framing. You provide networking.
 
-### ❌ "BlazeSecureSession secures the transport"
+### "BlazeSecureSession secures the transport"
 
 **Reality**: BlazeSecureSession secures the **data** (application layer), not the transport. It works over any transport.
 
-### ❌ "Frames only work over TCP"
+### "Frames only work over TCP"
 
 **Reality**: Frames work over **any** byte stream - TCP, UDP, IPC, shared memory, files, etc.
 
@@ -332,11 +332,11 @@ Or use **either**:
 
 **BlazeBinary is a data encoding/decoding format, not a transport protocol.**
 
-- ✅ Works with **any** transport (TCP, UDP, IPC, shared memory, files, etc.)
-- ✅ Provides encoding/decoding, framing, compression, encryption
-- ✅ Does **NOT** provide transport, connections, or networking
-- ✅ You provide the transport layer
-- ✅ BlazeBinary provides the data layer
+- Works with **any** transport (TCP, UDP, IPC, shared memory, files, etc.)
+- Provides encoding/decoding, framing, compression, encryption
+- Does **NOT** provide transport, connections, or networking
+- You provide the transport layer
+- BlazeBinary provides the data layer
 
 **Think of it like JSON**: JSON works over HTTP, WebSockets, files, message queues, etc. BlazeBinary is the same - it's just a data format that works over any transport.
 

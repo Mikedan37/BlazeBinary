@@ -43,7 +43,7 @@ let result = data.withUnsafeBytes { bytes -> ReturnType in
 ### Problem: Direct Subscript Access Can Crash
 
 ```swift
-// ❌ UNSAFE - Can crash on Linux or with certain Data representations
+// UNSAFE - Can crash on Linux or with certain Data representations
 let byte = buffer[0]  // Might crash if buffer is empty or in certain states
 let subdata = buffer.subdata(in: 2..<6)  // Can crash with invalid ranges
 ```
@@ -56,7 +56,7 @@ let subdata = buffer.subdata(in: 2..<6)  // Can crash with invalid ranges
 ### Solution: Use `withUnsafeBytes`
 
 ```swift
-// ✅ SAFE - Always bounds-checked
+// Met SAFE - Always bounds-checked
 let byte = buffer.withUnsafeBytes { bytes -> UInt8 in
     guard bytes.count >= 1 else {
         return 0xFF  // Sentinel value for error
@@ -115,7 +115,7 @@ data.withUnsafeBytes { bytes in
 In BlazeBinary, we need to read a 4-byte big-endian integer from bytes 2-5 of a frame:
 
 ```swift
-// ❌ OLD WAY - Using subdata (can crash)
+// OLD WAY - Using subdata (can crash)
 let lengthBytes = buffer.subdata(in: 2..<6)  // Creates new Data object
 let length = lengthBytes.withUnsafeBytes { bytes in
     var value: UInt32 = 0
@@ -133,7 +133,7 @@ let length = lengthBytes.withUnsafeBytes { bytes in
 3. Two `withUnsafeBytes` calls (inefficient)
 
 ```swift
-// ✅ NEW WAY - Direct access (safe and efficient)
+// Met NEW WAY - Direct access (safe and efficient)
 let length = buffer.withUnsafeBytes { bytes -> UInt32 in
     guard bytes.count >= 6 else {
         return UInt32(0)  // Not enough data
@@ -232,12 +232,12 @@ result |= UInt32(bytes[3]) << 24  // Least significant byte first
 ### 1. Always Bounds Check
 
 ```swift
-// ❌ BAD
+// BAD
 let byte = buffer.withUnsafeBytes { bytes in
     return bytes[0]  // Can crash if bytes.count == 0
 }
 
-// ✅ GOOD
+// Met GOOD
 let byte = buffer.withUnsafeBytes { bytes -> UInt8 in
     guard bytes.count >= 1 else {
         return 0xFF  // Sentinel value
@@ -268,11 +268,11 @@ guard byte0 != 0xFF && byte1 != 0xFF else {
 ### 4. Don't Store Pointers
 
 ```swift
-// ❌ BAD - Pointer becomes invalid after closure
+// BAD - Pointer becomes invalid after closure
 let pointer = buffer.withUnsafeBytes { $0.baseAddress }
 let byte = pointer?.load(as: UInt8.self)  // CRASH! Pointer is invalid
 
-// ✅ GOOD - Do all work inside closure
+// Met GOOD - Do all work inside closure
 let byte = buffer.withUnsafeBytes { bytes -> UInt8 in
     guard bytes.count >= 1 else { return 0 }
     return bytes[0]
@@ -292,16 +292,16 @@ let byte = buffer.withUnsafeBytes { bytes -> UInt8 in
 
 ### When to Use
 
-- ✅ Reading binary formats (like BlazeBinary frames)
-- ✅ Converting between byte representations
-- ✅ Performance-critical code paths
-- ✅ Interfacing with C APIs
+- Reading binary formats (like BlazeBinary frames)
+- Converting between byte representations
+- Performance-critical code paths
+- Interfacing with C APIs
 
 ### When NOT to Use
 
-- ❌ Simple operations that `Data` handles well (e.g., `data.append()`)
-- ❌ When you don't need the performance
-- ❌ If you're not comfortable with bounds checking
+- Simple operations that `Data` handles well (e.g., `data.append()`)
+- When you don't need the performance
+- If you're not comfortable with bounds checking
 
 ---
 

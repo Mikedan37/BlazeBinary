@@ -279,18 +279,18 @@ For small frames (100 bytes):
 ### When to Use
 
 **Use BlazeTransport when**:
-- ✅ Same datacenter/network (low packet loss)
-- ✅ Single-purpose connections
-- ✅ Frame-based protocol (BlazeBinary)
-- ✅ Performance is critical
-- ✅ You control both endpoints
+- Same datacenter/network (low packet loss)
+- Single-purpose connections
+- Frame-based protocol (BlazeBinary)
+- Performance is critical
+- You control both endpoints
 
 **Use TCP when**:
-- ❌ High packet loss (WAN, mobile)
-- ❌ Need port multiplexing
-- ❌ Need middlebox compatibility
-- ❌ Need standard protocol compatibility
-- ❌ Need complex congestion control
+- High packet loss (WAN, mobile)
+- Need port multiplexing
+- Need middlebox compatibility
+- Need standard protocol compatibility
+- Need complex congestion control
 
 ## Integration with BlazeBinary
 
