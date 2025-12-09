@@ -516,7 +516,7 @@ stateDiagram-v2
 - [HANDSHAKE.md](HANDSHAKE.md) - Handshake protocol specification
 - [ENCRYPTION.md](ENCRYPTION.md) - Encryption protocol details
 - [FRAME_PROTOCOL.md](FRAME_PROTOCOL.md) - Frame format specification
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [ARCHITECTURE.md](../Core/ARCHITECTURE.md) - System architecture
 
 ---
 

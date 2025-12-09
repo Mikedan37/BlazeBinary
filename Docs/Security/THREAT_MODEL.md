@@ -339,6 +339,6 @@ BlazeBinary provides the following security guarantees:
 
 - [Security Policy](../SECURITY.md)
 - [Specification](SPECIFICATION.md)
-- [Architecture](ARCHITECTURE.md)
+- [Architecture](../Core/ARCHITECTURE.md)
 - [Benchmarks](BENCHMARKS.md)
 

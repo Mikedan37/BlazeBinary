@@ -414,6 +414,6 @@ Potential performance improvements:
 
 - [Specification](SPECIFICATION.md)
 - [Encoding Model](ENCODING_MODEL.md)
-- [Architecture](ARCHITECTURE.md)
+- [Architecture](../Core/ARCHITECTURE.md)
 - [Rationale](RATIONALE.md)
 

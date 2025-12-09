@@ -279,4 +279,4 @@ let decrypted = try parser.nextFrame() // Returns decrypted plaintext
 - [HANDSHAKE.md](HANDSHAKE.md) - Handshake protocol specification
 - [FRAME_PROTOCOL.md](FRAME_PROTOCOL.md) - Frame format and protocol
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Security threat model
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [ARCHITECTURE.md](../Core/ARCHITECTURE.md) - System architecture

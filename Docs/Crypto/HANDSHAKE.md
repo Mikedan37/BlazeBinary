@@ -274,4 +274,4 @@ var serverSession = BlazeSecureSession(keyMaterial: serverKeys)
 - [ENCRYPTION.md](ENCRYPTION.md) - Encryption and key derivation details
 - [FRAME_PROTOCOL.md](FRAME_PROTOCOL.md) - Frame format and protocol
 - [THREAT_MODEL.md](THREAT_MODEL.md) - Security threat model
-- [ARCHITECTURE.md](ARCHITECTURE.md) - System architecture
+- [ARCHITECTURE.md](../Core/ARCHITECTURE.md) - System architecture
