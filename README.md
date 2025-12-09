@@ -137,12 +137,12 @@ graph TB
 
 BlazeBinary works with **any transport protocol**. You provide the transport layer:
 
-- ✅ **TCP** - Reliable, ordered delivery (recommended for most use cases)
-- ✅ **UDP** - Lower latency, higher throughput (10-20% faster, 22% less overhead)
-- ✅ **Unix Sockets** - IPC between processes
-- ✅ **Shared Memory** - Fastest for same-machine communication
-- ✅ **Files** - Persistent storage
-- ✅ **Any byte stream** - Custom transports
+- **TCP** - Reliable, ordered delivery (recommended for most use cases)
+- **UDP** - Lower latency, higher throughput (10-20% faster, 22% less overhead)
+- **Unix Sockets** - IPC between processes
+- **Shared Memory** - Fastest for same-machine communication
+- **Files** - Persistent storage
+- **Any byte stream** - Custom transports
 
 ### TCP vs UDP Performance
 

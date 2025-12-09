@@ -305,26 +305,26 @@ AAD = frameType (1 byte) || "BlazeBinaryFrame" (16 bytes UTF-8)
 
 | Guarantee | Status | Notes |
 |-----------|--------|-------|
-| **Confidentiality** | ✅ Yes | ChaCha20-Poly1305 provides encryption |
-| **Authentication** | ✅ Yes | Poly1305 tag verifies integrity |
-| **Perfect Forward Secrecy** | ✅ Yes | Ephemeral X25519 keys |
-| **Replay Protection** | ⚠️ Partial | Counter tracking, no automatic rejection |
-| **MITM Protection** | ❌ No | No public key authentication |
-| **Key Compromise** | ✅ Yes | Old sessions remain secure (PFS) |
+| **Confidentiality** | Yes | ChaCha20-Poly1305 provides encryption |
+| **Authentication** | Yes | Poly1305 tag verifies integrity |
+| **Perfect Forward Secrecy** | Yes | Ephemeral X25519 keys |
+| **Replay Protection** | Partial | Counter tracking, no automatic rejection |
+| **MITM Protection** | No | No public key authentication |
+| **Key Compromise** | Yes | Old sessions remain secure (PFS) |
 
 ### Memory Safety Guarantees
 
-- ✅ **No buffer overflows**: All reads are bounds-checked
-- ✅ **No use-after-free**: Swift memory management
-- ✅ **No double-free**: Swift ARC
-- ✅ **Safe pointer operations**: Uses Swift safe APIs
+- **No buffer overflows**: All reads are bounds-checked
+- **No use-after-free**: Swift memory management
+- **No double-free**: Swift ARC
+- **Safe pointer operations**: Uses Swift safe APIs
 
 ### Input Validation Guarantees
 
-- ✅ **Frame size limits**: 5 MB maximum
-- ✅ **Length validation**: All lengths validated before use
-- ✅ **Type validation**: Frame types and compression modes validated
-- ✅ **Key validation**: Public keys validated (size, format)
+- **Frame size limits**: 5 MB maximum
+- **Length validation**: All lengths validated before use
+- **Type validation**: Frame types and compression modes validated
+- **Key validation**: Public keys validated (size, format)
 
 ## Attack Surfaces
 
@@ -359,10 +359,10 @@ graph TD
 ```
 
 **Mitigations**:
-- ✅ Public key size validation (must be 32 bytes)
-- ✅ Public key format validation (X25519)
-- ✅ Version check (must be 0x01)
-- ⚠️ No MITM protection (requires out-of-band verification)
+- Public key size validation (must be 32 bytes)
+- Public key format validation (X25519)
+- Version check (must be 0x01)
+- No MITM protection (requires out-of-band verification)
 
 ### 2. Encryption Attacks
 
@@ -397,10 +397,10 @@ graph TD
 ```
 
 **Mitigations**:
-- ✅ Unique nonces per frame (counter + random prefix)
-- ✅ Separate send/recv counters
-- ✅ Poly1305 tag verification (tampering detected)
-- ✅ AAD includes frame type (cross-protocol protection)
+- Unique nonces per frame (counter + random prefix)
+- Separate send/recv counters
+- Poly1305 tag verification (tampering detected)
+- AAD includes frame type (cross-protocol protection)
 
 ### 3. Frame Protocol Attacks
 
@@ -431,10 +431,10 @@ graph TD
 ```
 
 **Mitigations**:
-- ✅ Frame size limit (5 MB)
-- ✅ Explicit compression mode (v2.0, no autodetection)
-- ✅ Frame type validation
-- ✅ Header validation
+- Frame size limit (5 MB)
+- Explicit compression mode (v2.0, no autodetection)
+- Frame type validation
+- Header validation
 
 ## Threat Mitigations
 
@@ -470,13 +470,13 @@ stateDiagram-v2
 
 | Attack | Detection | Response | Severity |
 |--------|-----------|----------|----------|
-| Invalid public key | ✅ Size/format check | Reject with error | Low |
-| Nonce reuse | ⚠️ Counter tracking | Log warning | Medium |
-| Tag tampering | ✅ Poly1305 verification | Reject with error | High |
-| Ciphertext tampering | ✅ Poly1305 verification | Reject with error | High |
-| Oversized frame | ✅ Size check | Reject with error | Medium |
-| Malformed frame | ✅ Header validation | Reject with error | Low |
-| Compression false positive | ✅ Explicit mode (v2.0) | N/A (eliminated) | None |
+| Invalid public key | Size/format check | Reject with error | Low |
+| Nonce reuse | Counter tracking | Log warning | Medium |
+| Tag tampering | Poly1305 verification | Reject with error | High |
+| Ciphertext tampering | Poly1305 verification | Reject with error | High |
+| Oversized frame | Size check | Reject with error | Medium |
+| Malformed frame | Header validation | Reject with error | Low |
+| Compression false positive | Explicit mode (v2.0) | N/A (eliminated) | None |
 
 ## Best Practices
 

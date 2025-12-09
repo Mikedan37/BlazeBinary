@@ -307,13 +307,13 @@ BlazeBinary provides the following security guarantees:
 |---------------------------|-----------|-------|
 | Deterministic encoding    | Yes       | Same input → same bytes, per spec. |
 | Memory safety (Swift)     | Yes       | Uses Swift safe APIs; no raw pointer arithmetic exposed. |
-| On-wire confidentiality   | ✅ Yes (Secure Mode) | ChaCha20-Poly1305 encryption in secure session mode. |
-| On-wire integrity/auth    | ✅ Yes (Secure Mode) | Poly1305 tag provides cryptographic authentication. |
-| Replay protection         | ⚠️ Partial | Counter tracking; application layer should implement strict replay protection. |
+| On-wire confidentiality   | Yes (Secure Mode) | ChaCha20-Poly1305 encryption in secure session mode. |
+| On-wire integrity/auth    | Yes (Secure Mode) | Poly1305 tag provides cryptographic authentication. |
+| Replay protection         | Partial | Counter tracking; application layer should implement strict replay protection. |
 | Schema / type validation  | Best-effort | Decoder enforces structural rules but cannot prevent all semantic misuse. |
 | Side-channel resistance   | No        | Not specifically hardened for timing/power analysis. |
-| MITM protection           | ❌ No | Requires out-of-band key verification (certificates, fingerprints). |
-| Perfect forward secrecy  | ✅ Yes | Ephemeral X25519 keys ensure PFS. |
+| MITM protection           | No | Requires out-of-band key verification (certificates, fingerprints). |
+| Perfect forward secrecy  | Yes | Ephemeral X25519 keys ensure PFS. |
 
 ## Recommendations
 
