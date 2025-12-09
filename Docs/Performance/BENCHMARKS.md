@@ -194,36 +194,36 @@ The comprehensive benchmark suite includes:
 
 ### Encoding Throughput Comparison
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#2c3e50', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#34495e', 'lineColor':'#3498db', 'secondaryColor':'#27ae60', 'tertiaryColor':'#e74c3c'}}}%%
-bar
-    title "Encoding Throughput (ops/sec)"
-    x-axis ["Small Int", "Medium Int", "Large Int", "Data 1KB", "Data 8KB", "Data 32KB"]
-    y-axis "Operations per second" 0 --> 3000000
-    bar [2500000, 2400000, 2200000, 150000, 20000, 5000]
-```
+| Operation | Throughput (ops/sec) | Relative Performance |
+|-----------|---------------------|---------------------|
+| Small Int | 2,500,000 | 100% (baseline) |
+| Medium Int | 2,400,000 | 96% |
+| Large Int | 2,200,000 | 88% |
+| Data 1KB | 150,000 | 6% |
+| Data 8KB | 20,000 | 0.8% |
+| Data 32KB | 5,000 | 0.2% |
 
 ### Decoding Throughput Comparison
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#2c3e50', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#34495e', 'lineColor':'#3498db', 'secondaryColor':'#27ae60', 'tertiaryColor':'#e74c3c'}}}%%
-bar
-    title "Decoding Throughput (ops/sec)"
-    x-axis ["Small Int", "Medium Int", "Large Int", "Data 1KB", "Data 8KB", "Data 32KB"]
-    y-axis "Operations per second" 0 --> 3000000
-    bar [2800000, 2700000, 2500000, 200000, 25000, 6000]
-```
+| Operation | Throughput (ops/sec) | Relative Performance |
+|-----------|---------------------|---------------------|
+| Small Int | 2,800,000 | 100% (baseline) |
+| Medium Int | 2,700,000 | 96% |
+| Large Int | 2,500,000 | 89% |
+| Data 1KB | 200,000 | 7% |
+| Data 8KB | 25,000 | 0.9% |
+| Data 32KB | 6,000 | 0.2% |
 
 ### AEAD Encryption Performance
 
-```mermaid
-%%{init: {'theme':'base', 'themeVariables': { 'primaryColor':'#2c3e50', 'primaryTextColor':'#ffffff', 'primaryBorderColor':'#34495e', 'lineColor':'#3498db', 'secondaryColor':'#27ae60', 'tertiaryColor':'#e74c3c'}}}%%
-bar
-    title "AEAD Encryption/Decryption Throughput"
-    x-axis ["Encrypt 128B", "Encrypt 1KB", "Encrypt 4KB", "Decrypt 128B", "Decrypt 1KB", "Decrypt 4KB"]
-    y-axis "Operations per second" 0 --> 100000
-    bar [45000, 12000, 3000, 50000, 15000, 4000]
-```
+| Operation | Throughput (ops/sec) | Relative Performance |
+|-----------|---------------------|---------------------|
+| Encrypt 128B | 45,000 | 100% (baseline) |
+| Encrypt 1KB | 12,000 | 27% |
+| Encrypt 4KB | 3,000 | 7% |
+| Decrypt 128B | 50,000 | 111% |
+| Decrypt 1KB | 15,000 | 33% |
+| Decrypt 4KB | 4,000 | 9% |
 
 ### Frame Overhead Analysis
 
