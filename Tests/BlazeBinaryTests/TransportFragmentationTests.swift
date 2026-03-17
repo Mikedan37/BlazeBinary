@@ -1,3 +1,4 @@
+#if swift(>=6.0)
 import Testing
 import Foundation
 @testable import BlazeBinary
@@ -80,8 +81,8 @@ struct TransportFragmentationTests {
         let payload = Data(repeating: 0xCC, count: 500)
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
 
-        // v2 frame: 1 type + 1 compression + 4 length = 6 byte header
-        let headerSize = 6
+        // v2.1 frame: 1 magic + 1 type + 1 compression + 4 length = 7 byte header
+        let headerSize = BlazeFrameEncoder.v2HeaderSize
         guard frame.count > headerSize else {
             Issue.record("Frame too small for boundary test")
             return
@@ -170,3 +171,4 @@ struct TransportFragmentationTests {
         Issue.record("Large payload never decoded")
     }
 }
+#endif
