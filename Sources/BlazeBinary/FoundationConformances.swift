@@ -83,11 +83,12 @@ extension Array: BlazeBinaryDecodable where Element: BlazeBinaryDecodable {
 
 extension Dictionary: BlazeBinaryEncodable where Key == String, Value == String {
     public func blazeEncode(to encoder: BlazeBinaryEncoder) throws {
-        // Encode as array of key-value pairs for deterministic ordering
-        // Sort keys to ensure deterministic encoding
+        // Sort keys for deterministic encoding
         let sortedKeys = keys.sorted()
-        // Encode count as Int (uses varint encoding)
-        encoder.encode(sortedKeys.count)
+        // Encode count as unsigned varint — consistent with Array encoding.
+        // (Previously used signed zigzag varint via encoder.encode(Int), which
+        // produced a different wire format than Array's encodeVarint(UInt64).)
+        encoder.encodeVarint(UInt64(sortedKeys.count))
         for key in sortedKeys {
             encoder.encode(key)
             encoder.encode(self[key]!)
@@ -97,26 +98,26 @@ extension Dictionary: BlazeBinaryEncodable where Key == String, Value == String 
 
 extension Dictionary: BlazeBinaryDecodable where Key == String, Value == String {
     public init(from decoder: BlazeBinaryDecoder) throws {
-        // Decode count as Int (uses varint decoding)
-        let countInt = try decoder.decodeInt()
-        guard countInt >= 0 else {
-            throw BlazeBinaryError.decodeFailed("Invalid dictionary count: \(countInt)")
+        // Decode count as unsigned varint — consistent with Array decoding.
+        let count = try decoder.decodeVarint()
+
+        guard count <= UInt64(decoder.maxAllowedLength) else {
+            throw BlazeBinaryError.decodeFailed("Dictionary count \(count) exceeds maximum allowed \(decoder.maxAllowedLength)")
         }
-        let count = UInt64(countInt)
-        
-        guard count <= 10 * 1024 * 1024 else {
-            throw BlazeBinaryError.decodeFailed("Dictionary count \(count) exceeds maximum allowed")
+        guard count <= UInt64(Int.max) else {
+            throw BlazeBinaryError.decodeFailed("Dictionary count \(count) exceeds Int.max")
         }
-        
+        let countInt = Int(count)
+
         var result: [String: String] = [:]
-        result.reserveCapacity(Int(count))
-        
-        for _ in 0..<count {
+        result.reserveCapacity(countInt)
+
+        for _ in 0..<countInt {
             let key = try decoder.decodeString()
             let value = try decoder.decodeString()
             result[key] = value
         }
-        
+
         self = result
     }
 }

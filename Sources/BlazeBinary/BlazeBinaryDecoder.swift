@@ -9,6 +9,10 @@
 import Foundation
 
 /// Decoder for converting binary format to Swift values with strict bounds checking.
+///
+/// - Important: **Not thread-safe.** Each `BlazeBinaryDecoder` instance must be
+///   used from a single thread (or serial queue) at a time. The internal read
+///   offset is mutated on every decode call.
 public class BlazeBinaryDecoder {
     @usableFromInline internal let data: Data
     @usableFromInline internal var offset: Int
@@ -24,71 +28,31 @@ public class BlazeBinaryDecoder {
         self.offset = 0
         self.maxAllowedLength = maxAllowedLength
         
-        // Detect schema version: if first byte is 0xFE, try to read varint as schema version
-        // Schema version marker: 0xFE followed by varint (schema version >= 2)
-        // We distinguish from regular data by checking if the varint is valid and >= 2
-        // Note: 0xFE (254) can appear as a regular varint value, so we need careful detection
-        if !data.isEmpty && data[0] == 0xFE && data.count > 1 {
-            // Potential schema version marker - read varint
-            var savedOffset = 1 // Skip marker byte
-            var result: UInt64 = 0
-            var shift: UInt64 = 0
-            var bytesRead = 0
-            let maxBytes = 10
-            
-            // Read varint schema version (safely, without throwing)
-            // We read up to maxBytes or until we hit the end of data
-            var lastByteHadContinuation = false
-            while bytesRead < maxBytes && savedOffset < data.count {
-                let byte = data[savedOffset]
-                savedOffset += 1
-                bytesRead += 1
-                
-                result |= UInt64(byte & 0x7F) << shift
-                lastByteHadContinuation = (byte & 0x80) != 0
-                
-                if !lastByteHadContinuation {
-                    break
-                }
-                
-                shift += 7
-                if shift >= 64 {
-                    // Invalid varint (too many bits), assume v1
-                    self.schemaVersion = 1
-                    self.offset = 0
-                    return
-                }
-            }
-            
-            // If we didn't read a complete varint (last byte had continuation bit or no bytes read), 
-            // it's not a schema version marker - treat as regular data
-            if lastByteHadContinuation || bytesRead == 0 {
-                self.schemaVersion = 1
-                self.offset = 0
-                return
-            }
-            
-            // Validate: schema version must be >= 2 and reasonable
-            // Version 1 is never encoded (backwards compatibility)
-            // If result is 1 or 0, it's likely a false positive (data starting with 0xFE 0x01 or 0xFE 0x00)
-            // Schema versions can be multi-byte varints, but we need to distinguish from regular data
-            // Key insight: If the varint we read would leave no data remaining (savedOffset >= data.count),
-            // it's likely a false positive - we're reading the entire data as a schema version, leaving nothing to decode
-            // This prevents cases like [0xFE, 0xFF, 0x00] (value 16383) from being misidentified
-            if result >= 2 && result <= UInt32.max {
-                // Additional check: if reading this as schema version would consume all data, it's a false positive
-                // Schema version should be followed by actual encoded data, so there should be data remaining
-                if savedOffset >= data.count {
-                    // No data remaining after schema version - likely false positive (entire data is the varint)
-                    self.schemaVersion = 1
-                    self.offset = 0
-                } else {
-                    self.schemaVersion = UInt32(result)
-                    self.offset = savedOffset
-                }
+        // Detect schema version: if first byte is 0xFE, try to read schema version.
+        //
+        // Schema version marker: 0xFE followed by a single-byte varint (version 2...127).
+        //
+        // KNOWN LIMITATION (in-band signaling collision):
+        // 0xFE (254) is also the zigzag encoding of Int(127). If the very first field
+        // of a v1 record is a signed Int with value 127, the encoder writes 0xFE as a
+        // single-byte varint. The decoder then sees [0xFE, <next-byte>] and may parse
+        // a false-positive schema version. Mitigations:
+        //   1. Only single-byte varints (no continuation bit) in 2...127 are accepted.
+        //      This rejects multi-byte varints which are almost certainly payload data.
+        //   2. At least 1 byte of payload must remain after the marker + version byte
+        //      (data.count > 2), so [0xFE, 0x02] alone is not misinterpreted.
+        //   3. If your first field can be Int(127), use schemaVersion >= 2 (which
+        //      writes an explicit marker), or encode the first field as UInt32/UInt64.
+        if !data.isEmpty && data[0] == 0xFE && data.count > 2 {
+            let versionByte = data[1]
+
+            // Accept only single-byte varints (continuation bit clear) in range 2...127.
+            // Multi-byte varints (continuation bit set) are almost certainly payload data,
+            // not a schema version — reject them as false positives.
+            if (versionByte & 0x80) == 0 && versionByte >= 2 {
+                self.schemaVersion = UInt32(versionByte)
+                self.offset = 2 // Skip marker byte + version byte
             } else {
-                // Invalid schema version or result < 2 (false positive), assume v1
-                // Reset offset to 0 so decoder starts from beginning
                 self.schemaVersion = 1
                 self.offset = 0
             }
@@ -99,6 +63,16 @@ public class BlazeBinaryDecoder {
         }
     }
     
+    /// Internal initializer that skips schema version detection.
+    /// Used for decoding individual elements from buffer slices where
+    /// the first byte should never be interpreted as a schema version marker.
+    internal init(data: Data, maxAllowedLength: Int = 10 * 1024 * 1024, rawMode: Bool) {
+        self.data = data
+        self.offset = 0
+        self.maxAllowedLength = maxAllowedLength
+        self.schemaVersion = 1
+    }
+
     /// Returns the detected schema version (defaults to 1 if not present).
     public var version: UInt32 {
         return schemaVersion
@@ -106,6 +80,7 @@ public class BlazeBinaryDecoder {
     
     /// Returns the remaining unread data.
     public var remainingData: Data {
+        guard offset >= 0, offset <= data.count else { return Data() }
         guard offset < data.count else { return Data() }
         return data.subdata(in: offset..<data.count)
     }
@@ -114,9 +89,13 @@ public class BlazeBinaryDecoder {
     
     /// Ensures there are at least `count` bytes remaining.
     /// - Parameter count: The number of bytes required
-    /// - Throws: `BlazeBinaryError.truncated` if insufficient data
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient data or count is negative
     @usableFromInline internal func ensureBytes(_ count: Int) throws {
-        guard offset + count <= data.count else {
+        guard count >= 0 else {
+            throw BlazeBinaryError.decodeFailed("Negative byte count")
+        }
+        let end = offset + count
+        guard end >= offset, end <= data.count else {
             throw BlazeBinaryError.truncated
         }
     }
@@ -181,42 +160,83 @@ public class BlazeBinaryDecoder {
         return Int(truncatingIfNeeded: value64)
     }
     
-    // MARK: - Fixed-Width Little-Endian Decoding
+    // MARK: - Fixed-Width Big-Endian (Network Byte Order) Decoding
     
-    /// Decodes a UInt32 in little-endian format.
+    /// Decodes a UInt16 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 2 bytes, big-endian
+    /// - Format: `[MSB, LSB]`
+    /// - Example: `[0x12, 0x34]` → `0x1234`
+    ///
+    /// **Framing**: Expects exactly 2 bytes. No length prefix.
+    /// **Allocation**: Zero-copy operation using manual byte assembly.
+    ///
+    /// - Returns: The decoded UInt16
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes
+    @inlinable
+    public func decodeUInt16() throws -> UInt16 {
+        try ensureBytes(2)
+        // Read bytes manually in big-endian order to avoid alignment issues
+        var value: UInt16 = 0
+        value |= UInt16(data[offset]) << 8
+        value |= UInt16(data[offset + 1])
+        offset += 2
+        return value
+    }
+    
+    /// Decodes a UInt32 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 4 bytes, big-endian
+    /// - Format: `[MSB, byte2, byte3, LSB]`
+    /// - Example: `[0x12, 0x34, 0x56, 0x78]` → `0x12345678`
+    ///
+    /// **Framing**: Expects exactly 4 bytes. No length prefix.
+    /// **Allocation**: Zero-copy operation using manual byte assembly.
+    ///
     /// - Returns: The decoded UInt32
-    /// - Throws: `BlazeBinaryError.truncated`
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes
     @inlinable
     public func decodeUInt32() throws -> UInt32 {
         try ensureBytes(4)
-        // Read bytes manually to avoid alignment issues
+        // Read bytes manually in big-endian order to avoid alignment issues
         var value: UInt32 = 0
-        value |= UInt32(data[offset])
-        value |= UInt32(data[offset + 1]) << 8
-        value |= UInt32(data[offset + 2]) << 16
-        value |= UInt32(data[offset + 3]) << 24
+        value |= UInt32(data[offset]) << 24
+        value |= UInt32(data[offset + 1]) << 16
+        value |= UInt32(data[offset + 2]) << 8
+        value |= UInt32(data[offset + 3])
         offset += 4
-        return value // Already little-endian
+        return value
     }
     
-    /// Decodes a UInt64 in little-endian format.
+    /// Decodes a UInt64 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 8 bytes, big-endian
+    /// - Format: `[MSB, ..., LSB]`
+    /// - Example: `[0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]` → `0x0123456789ABCDEF`
+    ///
+    /// **Framing**: Expects exactly 8 bytes. No length prefix.
+    /// **Allocation**: Zero-copy operation using manual byte assembly.
+    ///
     /// - Returns: The decoded UInt64
-    /// - Throws: `BlazeBinaryError.truncated`
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes
     @inlinable
     public func decodeUInt64() throws -> UInt64 {
         try ensureBytes(8)
-        // Read bytes manually to avoid alignment issues
+        // Read bytes manually in big-endian order to avoid alignment issues
         var value: UInt64 = 0
-        value |= UInt64(data[offset])
-        value |= UInt64(data[offset + 1]) << 8
-        value |= UInt64(data[offset + 2]) << 16
-        value |= UInt64(data[offset + 3]) << 24
-        value |= UInt64(data[offset + 4]) << 32
-        value |= UInt64(data[offset + 5]) << 40
-        value |= UInt64(data[offset + 6]) << 48
-        value |= UInt64(data[offset + 7]) << 56
+        value |= UInt64(data[offset]) << 56
+        value |= UInt64(data[offset + 1]) << 48
+        value |= UInt64(data[offset + 2]) << 40
+        value |= UInt64(data[offset + 3]) << 32
+        value |= UInt64(data[offset + 4]) << 24
+        value |= UInt64(data[offset + 5]) << 16
+        value |= UInt64(data[offset + 6]) << 8
+        value |= UInt64(data[offset + 7])
         offset += 8
-        return value // Already little-endian
+        return value
     }
     
     /// Decodes a Bool from a single byte (0x00 for false, 0x01 for true).
@@ -238,24 +258,58 @@ public class BlazeBinaryDecoder {
         }
     }
     
-    /// Decodes a Double in little-endian format (8 bytes).
+    /// Decodes a Float (Float32) in big-endian (network byte order) format (4 bytes).
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 4 bytes, big-endian IEEE 754 single precision
+    /// - Format: IEEE 754 single precision, bit pattern decoded from big-endian bytes
+    /// - Example: `[0x3F, 0x80, 0x00, 0x00]` → `1.0`
+    ///
+    /// **Framing**: Expects exactly 4 bytes. No length prefix.
+    /// **Allocation**: Zero-copy operation using manual byte assembly.
+    ///
+    /// - Returns: The decoded Float
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes
+    @inlinable
+    public func decodeFloat() throws -> Float {
+        try ensureBytes(4)
+        // Read bytes manually in big-endian order to avoid alignment issues
+        var bitPattern: UInt32 = 0
+        bitPattern |= UInt32(data[offset]) << 24
+        bitPattern |= UInt32(data[offset + 1]) << 16
+        bitPattern |= UInt32(data[offset + 2]) << 8
+        bitPattern |= UInt32(data[offset + 3])
+        offset += 4
+        return Float(bitPattern: bitPattern)
+    }
+    
+    /// Decodes a Double in big-endian (network byte order) format (8 bytes).
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 8 bytes, big-endian IEEE 754 double precision
+    /// - Format: IEEE 754 double precision, bit pattern decoded from big-endian bytes
+    /// - Example: `[0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]` → `1.0`
+    ///
+    /// **Framing**: Expects exactly 8 bytes. No length prefix.
+    /// **Allocation**: Zero-copy operation using manual byte assembly.
+    ///
     /// - Returns: The decoded Double
-    /// - Throws: `BlazeBinaryError.truncated`
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes
     @inlinable
     public func decodeDouble() throws -> Double {
         try ensureBytes(8)
-        // Read bytes manually to avoid alignment issues
+        // Read bytes manually in big-endian order to avoid alignment issues
         var bitPattern: UInt64 = 0
-        bitPattern |= UInt64(data[offset])
-        bitPattern |= UInt64(data[offset + 1]) << 8
-        bitPattern |= UInt64(data[offset + 2]) << 16
-        bitPattern |= UInt64(data[offset + 3]) << 24
-        bitPattern |= UInt64(data[offset + 4]) << 32
-        bitPattern |= UInt64(data[offset + 5]) << 40
-        bitPattern |= UInt64(data[offset + 6]) << 48
-        bitPattern |= UInt64(data[offset + 7]) << 56
+        bitPattern |= UInt64(data[offset]) << 56
+        bitPattern |= UInt64(data[offset + 1]) << 48
+        bitPattern |= UInt64(data[offset + 2]) << 40
+        bitPattern |= UInt64(data[offset + 3]) << 32
+        bitPattern |= UInt64(data[offset + 4]) << 24
+        bitPattern |= UInt64(data[offset + 5]) << 16
+        bitPattern |= UInt64(data[offset + 6]) << 8
+        bitPattern |= UInt64(data[offset + 7])
         offset += 8
-        return Double(bitPattern: bitPattern) // Already little-endian
+        return Double(bitPattern: bitPattern)
     }
     
     // MARK: - Length-Prefixed Decoding
@@ -270,13 +324,24 @@ public class BlazeBinaryDecoder {
         guard length <= maxAllowedLength else {
             throw BlazeBinaryError.decodeFailed("Data length \(length) exceeds maximum allowed \(maxAllowedLength)")
         }
-        
+        // Prevent Int overflow: length > Int.max becomes negative and causes Range crash in subdata
+        guard length <= UInt64(Int.max) else {
+            throw BlazeBinaryError.decodeFailed("Data length \(length) exceeds Int.max")
+        }
         let lengthInt = Int(length)
+        guard lengthInt >= 0 else {
+            throw BlazeBinaryError.decodeFailed("Data length negative or overflowed")
+        }
         try ensureBytes(lengthInt)
         
+        // Bounds check to avoid Range crash (lowerBound <= upperBound)
+        let end = offset + lengthInt
+        guard end >= offset, end <= data.count else {
+            throw BlazeBinaryError.truncated
+        }
         // Zero-copy: subdata creates a slice that references the same underlying buffer
-        let result = data.subdata(in: offset..<(offset + lengthInt))
-        offset += lengthInt
+        let result = data.subdata(in: offset..<end)
+        offset = end
         return result
     }
     
@@ -314,11 +379,19 @@ public class BlazeBinaryDecoder {
         guard count <= maxAllowedLength else {
             throw BlazeBinaryError.decodeFailed("Array count \(count) exceeds maximum allowed \(maxAllowedLength)")
         }
+        // Prevent Int overflow: count > Int.max makes 0..<count and reserveCapacity(Int(count)) unsafe
+        guard count <= UInt64(Int.max) else {
+            throw BlazeBinaryError.decodeFailed("Array count \(count) exceeds Int.max")
+        }
+        let countInt = Int(count)
+        guard countInt >= 0 else {
+            throw BlazeBinaryError.decodeFailed("Array count negative or overflowed")
+        }
         
         var result: [T] = []
-        result.reserveCapacity(Int(count))
+        result.reserveCapacity(countInt)
         
-        for _ in 0..<count {
+        for _ in 0..<countInt {
             let item = try T(from: self)
             result.append(item)
         }
@@ -353,66 +426,72 @@ public class BlazeBinaryDecoder {
         return try T(from: self)
     }
     
-    /// Skips an unknown field by detecting its type and skipping the appropriate number of bytes.
-    /// Supports: varints, fixed-width integers (UInt32, UInt64), length-prefixed blobs, bools.
-    /// - Throws: `BlazeBinaryError.truncated` if data is incomplete
+    /// Skips an unknown field of a given wire type.
+    ///
+    /// Without type metadata, raw bytes cannot be reliably classified (e.g. `0x00`
+    /// could be `Bool(false)`, the first byte of `UInt32(0)`, or a varint).
+    /// Callers must specify the expected wire type.
+    ///
+    /// - Parameter type: The wire type of the field to skip.
+    /// - Throws: `BlazeBinaryError.truncated` if insufficient bytes remain.
+    public func skipField(_ type: WireType) throws {
+        switch type {
+        case .bool:
+            try ensureBytes(1)
+            offset += 1
+        case .fixedWidth32:
+            try ensureBytes(4)
+            offset += 4
+        case .fixedWidth64:
+            try ensureBytes(8)
+            offset += 8
+        case .varint:
+            _ = try decodeVarint()
+        case .lengthPrefixed:
+            _ = try decodeData()
+        }
+    }
+
+    /// Wire types for ``skipField(_:)``.
+    public enum WireType {
+        case bool
+        case fixedWidth32
+        case fixedWidth64
+        case varint
+        case lengthPrefixed
+    }
+
+    /// Skips an unknown field using byte-level heuristics.
+    ///
+    /// - Important: This is a best-effort heuristic. It **cannot** reliably distinguish
+    ///   a `Bool(false)` (`0x00`) from the first byte of a big-endian `UInt32`.
+    ///   Prefer ``skipField(_:)`` when the wire type is known.
+    @available(*, deprecated, message: "Use skipField(_:) with an explicit WireType instead")
     public func skipUnknownField() throws {
         guard offset < data.count else {
             throw BlazeBinaryError.truncated
         }
-        
+
         let firstByte = data[offset]
-        
-        // Check if it's a bool (0x00 or 0x01) - most specific check first
-        if firstByte == 0x00 || firstByte == 0x01 {
-            // Check if there are more bytes - if so, might be part of fixed-width
-            if offset + 1 < data.count {
-                let secondByte = data[offset + 1]
-                // If next bytes are all zeros, might be fixed-width UInt32/UInt64
-                // But for simplicity, treat 0x00/0x01 as bool if followed by non-zero or end
-                if secondByte == 0x00 && offset + 4 <= data.count {
-                    // Could be UInt32(0) or UInt64(0) - check if all 4/8 bytes are zero
-                    var allZero = true
-                    for i in offset..<min(offset + 4, data.count) {
-                        if data[i] != 0x00 {
-                            allZero = false
-                            break
-                        }
-                    }
-                    if allZero && offset + 4 <= data.count {
-                        offset += 4
-                        return
-                    }
-                }
-            }
-            offset += 1
-            return
-        }
-        
-        // Check if it's a varint with continuation bit set (definitely a varint)
+
+        // Continuation bit set → definitely a multi-byte varint
         if (firstByte & 0x80) != 0 {
             _ = try decodeVarint()
             return
         }
-        
-        // For bytes < 128 without continuation bit, it could be:
-        // 1. A single-byte varint (value < 128)
-        // 2. First byte of a fixed-width UInt32/UInt64
-        // We can't reliably distinguish, so we use a heuristic:
-        // If the next 3 bytes are all zeros and we have 4 bytes, it's likely UInt32
+
+        // Small value (< 128) with no continuation bit.
+        // Default to skipping 4 bytes (UInt32) when enough data remains,
+        // since single-byte bools are indistinguishable from leading zeros
+        // of a big-endian fixed-width integer.
         if offset + 4 <= data.count {
-            let secondByte = data[offset + 1]
-            let thirdByte = data[offset + 2]
-            let fourthByte = data[offset + 3]
-            // If bytes 2-4 are zeros, likely a fixed-width UInt32
-            if secondByte == 0x00 && thirdByte == 0x00 && fourthByte == 0x00 {
-                offset += 4
-                return
-            }
+            offset += 4
+            return
         }
-        
-        // Otherwise, treat as varint (single byte for values < 128)
-        _ = try decodeVarint()
+
+        // Not enough bytes for fixed-width; treat as single-byte varint or bool
+        try ensureBytes(1)
+        offset += 1
     }
     
     // MARK: - Zero-Copy Decoding
@@ -428,55 +507,37 @@ public class BlazeBinaryDecoder {
         guard length <= maxAllowedLength else {
             throw BlazeBinaryError.decodeFailed("Data length \(length) exceeds maximum allowed \(maxAllowedLength)")
         }
-        
+        guard length <= UInt64(Int.max) else {
+            throw BlazeBinaryError.decodeFailed("Data length \(length) exceeds Int.max")
+        }
         let lengthInt = Int(length)
+        guard lengthInt >= 0 else {
+            throw BlazeBinaryError.decodeFailed("Data length negative or overflowed")
+        }
         try ensureBytes(lengthInt)
         
+        let end = offset + lengthInt
+        guard end >= offset, end <= data.count else {
+            throw BlazeBinaryError.truncated
+        }
         // Return a slice (zero-copy) - Data.subdata creates a slice that references the same buffer
-        let result = data.subdata(in: offset..<(offset + lengthInt))
-        offset += lengthInt
+        let result = data.subdata(in: offset..<end)
+        offset = end
         return result
     }
     
-    /// EXPERIMENTAL: Decodes a struct with zero-copy memory mapping.
-    /// 
-    /// This method maps struct memory directly onto the data buffer, eliminating copies.
-    /// 
-    /// **Restrictions**:
-    /// - Struct must contain only fixed-width primitives (UInt8-64, Int8-64, Float, Double, Bool)
-    /// - No variable-length types (String, Data, arrays, optionals)
-    /// - Struct must be properly aligned for the platform
-    /// - Struct layout must match expected byte layout exactly
-    /// 
-    /// - Parameter type: The struct type to decode
-    /// - Returns: The decoded struct value
-    /// - Throws: `BlazeBinaryError` if decoding fails or struct is incompatible
-    public func decodeZeroCopy<T>(_ type: T.Type) throws -> T {
-        // Calculate struct size using MemoryLayout
-        let structSize = MemoryLayout<T>.size
-        let structAlignment = MemoryLayout<T>.alignment
-        
-        // Check bounds
-        try ensureBytes(structSize)
-        
-        // Check alignment
-        let dataPtr = data.withUnsafeBytes { $0.baseAddress }
-        let offsetPtr = dataPtr?.advanced(by: offset)
-        let alignment = Int(bitPattern: offsetPtr) % structAlignment
-        
-        guard alignment == 0 else {
-            throw BlazeBinaryError.decodeFailed("Struct alignment mismatch: offset \(offset) not aligned to \(structAlignment) bytes")
-        }
-        
-        // Validate that T is a fixed-width type (heuristic check)
-        // In production, this would use more sophisticated reflection
-        // For now, we rely on the type system and runtime checks
-        
-        // Perform zero-copy decode
-        return data.withUnsafeBytes { bytes in
-            let sourcePtr = bytes.baseAddress!.advanced(by: offset).assumingMemoryBound(to: T.self)
-            return sourcePtr.pointee
-        }
+    /// Decodes a `BlazeBinaryCodable` value, falling back from zero-copy to field-wise decoding.
+    ///
+    /// BlazeBinary uses big-endian wire format, so raw pointer casts only produce
+    /// correct results on big-endian hosts. On little-endian platforms (all Apple
+    /// Silicon), this method decodes through the standard `BlazeBinaryCodable`
+    /// path, which handles endian conversion per-field.
+    ///
+    /// - Parameter type: The `BlazeBinaryCodable` type to decode.
+    /// - Returns: The decoded value.
+    /// - Throws: `BlazeBinaryError` if decoding fails.
+    public func decodeZeroCopy<T: BlazeBinaryCodable>(_ type: T.Type) throws -> T {
+        return try T(from: self)
     }
 }
 

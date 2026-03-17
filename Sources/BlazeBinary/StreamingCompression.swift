@@ -70,13 +70,23 @@ public class BlazeStreamingCompressor {
     }
 }
 
-/// Streaming decompression context for incremental decompression.
+/// Buffered decompression context.
+///
+/// Each call to `decompress(_:)` should pass a complete independently-compressed
+/// chunk (as produced by `BlazeStreamingCompressor`). The chunk is decompressed
+/// immediately and the result returned. If a chunk cannot be decompressed on its
+/// own (e.g. the compressed data was not chunked), accumulate all data and call
+/// `decompressFinal()` instead.
+///
+/// > Note: This does not use `compression_stream` internally. Each chunk must be
+/// > a self-contained compressed block.
 public class BlazeStreamingDecompressor {
     private let mode: CompressionMode
     private var accumulatedData: Data
     private let estimatedOutputSize: Int?
-    
-    /// Creates a new streaming decompressor.
+    private var isFinalized: Bool = false
+
+    /// Creates a new decompressor.
     /// - Parameters:
     ///   - mode: Compression mode (LZ4 or LZFSE)
     ///   - estimatedOutputSize: Estimated decompressed size (optional, improves performance)
@@ -92,31 +102,50 @@ public class BlazeStreamingDecompressor {
         self.estimatedOutputSize = estimatedOutputSize
         #endif
     }
-    
-    /// Decompresses a chunk of data incrementally.
-    /// - Parameter data: Compressed data chunk
-    /// - Returns: Decompressed data (may be partial if more input needed)
-    /// - Throws: `BlazeBinaryError.decodeFailed` if decompression fails
+
+    /// Decompresses a single independently-compressed chunk.
+    ///
+    /// If the chunk is a complete compressed block (e.g. one output chunk from
+    /// `BlazeStreamingCompressor`), it is decompressed and returned immediately.
+    /// If decompression fails — typically because the data is a fragment of a
+    /// larger compressed stream — the data is buffered for `decompressFinal()`.
+    ///
+    /// - Parameter data: A compressed data chunk
+    /// - Returns: Decompressed data, or empty `Data` if the chunk was buffered
+    /// - Throws: Only rethrows errors unrelated to incomplete input
     public func decompress(_ data: Data) throws -> Data {
-        accumulatedData.append(data)
-        
-        // Try to decompress accumulated data
-        // In a real streaming implementation, we'd use compression_stream,
-        // but for simplicity, we'll use the existing decompress API
-        // This works for chunked compression where each chunk is independently compressed
-        
-        // For now, return empty - caller should call finalize() when done
-        return Data()
+        guard !isFinalized else {
+            throw BlazeBinaryError.decodeFailed("Cannot decompress after finalization")
+        }
+        // Try to decompress this chunk as a standalone block.
+        // BlazeStreamingCompressor produces independent chunks, so this
+        // should succeed when paired with that compressor.
+        do {
+            return try BlazeCompression.decompress(data, mode: mode, originalSize: estimatedOutputSize)
+        } catch let error as BlazeBinaryError {
+            // Decompression-specific failure — this chunk is not a standalone block.
+            // Buffer it for decompressFinal().
+            if case .decodeFailed = error {
+                accumulatedData.append(data)
+                return Data()
+            }
+            throw error
+        }
     }
-    
-    /// Finalizes decompression and returns any remaining decompressed data.
-    /// - Returns: Final decompressed data chunk
-    /// - Throws: `BlazeBinaryError.decodeFailed` if finalization fails
+
+    /// Decompresses any buffered data that could not be decompressed per-chunk.
+    ///
+    /// Call this after all chunks have been passed to `decompress(_:)`. If every
+    /// chunk was already decompressed individually, this returns empty data.
+    ///
+    /// - Returns: Final decompressed data
+    /// - Throws: `BlazeBinaryError.decodeFailed` if decompression fails
     public func decompressFinal() throws -> Data {
+        isFinalized = true
         guard !accumulatedData.isEmpty else {
             return Data()
         }
-        
+
         let compressed = accumulatedData
         accumulatedData.removeAll()
         return try BlazeCompression.decompress(compressed, mode: mode, originalSize: estimatedOutputSize)

@@ -2,9 +2,23 @@
 
 ## Encryption & Secure Sessions
 
-_Last updated: February 2025_
+_Last updated: March 2026_
 
 This document describes the Secure Session Mode for BlazeBinary, providing authenticated encryption for frame payloads using X25519 key agreement, HKDF key derivation, and ChaCha20-Poly1305 AEAD encryption.
+
+## Glossary
+
+These terms come up repeatedly — here's what they mean in plain English:
+
+**RFC (Request for Comments)** — The published standards documents that define how internet protocols work. Despite the humble name, RFCs are the authoritative specs. When we say "RFC 5869" we mean a specific, versioned, peer-reviewed standard document that every implementation agrees to follow. You can read any RFC at `https://datatracker.ietf.org/doc/rfc<number>/`.
+
+**HKDF (HMAC-based Key Derivation Function)** — A standard recipe (RFC 5869) for turning a shared secret into one or more strong, independent encryption keys. When two parties do a Diffie-Hellman key exchange, they end up with a shared secret — a blob of bytes only they know. You can't just use that blob as an encryption key because it might have biased bits or predictable structure. HKDF fixes this in two steps: (1) **Extract** — compress the shared secret into a fixed-size pseudorandom key, mixed with a salt for domain separation. (2) **Expand** — stretch that key into as many output bytes as you need, labeled with an "info" string so each derived key is independent.
+
+**AEAD (Authenticated Encryption with Associated Data)** — An encryption mode that both encrypts (confidentiality) and authenticates (integrity) data in a single operation. The "associated data" part means you can also authenticate metadata (like frame headers) that you want to protect from tampering but don't need to encrypt.
+
+**Nonce** — A number used once. For ChaCha20-Poly1305, this is a 12-byte value that must never repeat for the same key. BlazeBinary constructs nonces from a random prefix + a monotonic counter.
+
+**AAD (Additional Authenticated Data)** — Extra data (like the frame type byte) that gets included in the authentication tag but is not encrypted. This prevents an attacker from swapping encrypted payloads between different frame types.
 
 ## Overview
 
@@ -74,8 +88,9 @@ flowchart TD
    ```
    PRK = HMAC-SHA256(salt, sharedSecret)
    ```
-   - If `salt` is `nil`, a zero-length salt is used
-   - Default: `salt = nil` (zero-length)
+   - Default: `salt = "BlazeBinary-HKDF-v1"` (UTF-8 bytes)
+   - Per RFC 5869 §3.1, a non-zero application-specific salt provides better
+     domain separation than the zero-length fallback.
 
 2. **Expand Phase**:
    ```
@@ -114,6 +129,7 @@ nonce = noncePrefix (4 bytes) || counter (8 bytes, big-endian)
 - **Send counter**: Starts at 0, incremented after each encrypted frame
 - **Receive counter**: Tracks highest seen counter (for replay detection)
 - **No reuse**: Each encrypted frame uses a unique nonce
+- **Overflow protection**: Both counters are guarded against `UInt64.max` overflow — the session throws and must be rekeyed rather than wrapping to 0 (which would reuse nonces)
 
 ## AAD (Additional Authenticated Data)
 
@@ -189,14 +205,13 @@ For a 100-byte plaintext payload:
 
 ## Replay Protection
 
-**Current Implementation**: The receive counter tracks the highest seen counter value, but does not actively reject replayed frames. This provides:
+**Current Implementation**: Strict replay protection is enabled by default (`strictReplayProtection = true`). The receive counter enforces strictly monotonic frame ordering:
 
-- **Detection**: Application can check if counter decreased (replay detected)
-- **No automatic rejection**: Allows out-of-order delivery (if needed)
+- **Replay rejection**: Frames with `counter < recvCounter` are rejected
+- **Strictly ordered**: Frames must arrive in counter order — out-of-order delivery is rejected as a potential replay
+- **Configurable**: Set `strictReplayProtection = false` to allow out-of-order delivery (at the cost of replay protection)
 
-**Future Enhancement**: Optional strict replay protection that rejects nonces with counters <= recvCounter.
-
-**Recommendation**: For strict replay protection, implement application-level sequence number tracking or use the counter values to detect replays.
+**Design trade-off**: This is strict-ordering, not windowed replay protection. If you need to accept out-of-order frames while still detecting replays (e.g., over UDP), you'd need a sliding window bitmap — which is not yet implemented.
 
 ## Backwards Compatibility
 

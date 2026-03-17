@@ -151,38 +151,58 @@ struct PersonV3: BlazeBinaryCodable {
     let decodedNil = try decoderNil.decodeOptional(TestStruct.self)
     XCTAssert(decodedNil == nil)
 }
-    func testSkipUnknownFieldVarint() throws {
+    func testSkipFieldVarint() throws {
         let encoder = BlazeBinaryEncoder()
-        encoder.encode(42) // Varint
+        encoder.encode(42)
         encoder.encode("Hello")
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        try decoder.skipUnknownField() // Skip the varint
+        try decoder.skipField(.varint)
         let string = try decoder.decodeString()
         XCTAssert(string == "Hello")
     }
-    func testSkipUnknownFieldFixedWidth() throws {
+    func testSkipFieldFixedWidth32() throws {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(UInt32(100))
         encoder.encode("World")
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        // Skip UInt32 (4 bytes)
-        try decoder.skipUnknownField()
+        try decoder.skipField(.fixedWidth32)
         let string = try decoder.decodeString()
         XCTAssert(string == "World")
     }
-    func testSkipUnknownFieldLengthPrefixed() throws {
+    func testSkipFieldFixedWidth64() throws {
+        let encoder = BlazeBinaryEncoder()
+        encoder.encode(UInt64(999_999))
+        encoder.encode("64bit")
+        let data = encoder.encodedData()
+        
+        let decoder = BlazeBinaryDecoder(data: data)
+        try decoder.skipField(.fixedWidth64)
+        let string = try decoder.decodeString()
+        XCTAssert(string == "64bit")
+    }
+    func testSkipFieldBool() throws {
+        let encoder = BlazeBinaryEncoder()
+        encoder.encode(false)
+        encoder.encode("AfterBool")
+        let data = encoder.encodedData()
+        
+        let decoder = BlazeBinaryDecoder(data: data)
+        try decoder.skipField(.bool)
+        let string = try decoder.decodeString()
+        XCTAssert(string == "AfterBool")
+    }
+    func testSkipFieldLengthPrefixed() throws {
         let encoder = BlazeBinaryEncoder()
         encoder.encode(Data([0x01, 0x02, 0x03]))
         encoder.encode("Test")
         let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        // For length-prefixed fields, decode and discard
-        _ = try decoder.decodeData() // Skip the Data field
+        try decoder.skipField(.lengthPrefixed)
         let string = try decoder.decodeString()
         XCTAssert(string == "Test")
     }

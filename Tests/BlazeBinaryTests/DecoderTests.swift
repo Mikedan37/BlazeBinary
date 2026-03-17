@@ -4,7 +4,7 @@ import XCTest
 final class DecoderTestsTests: XCTestCase {
     func testDecodeUInt32() throws {
         var data = Data()
-        data.append(contentsOf: [0x78, 0x56, 0x34, 0x12])
+        data.append(contentsOf: [0x12, 0x34, 0x56, 0x78])
         
         let decoder = BlazeBinaryDecoder(data: data)
         let value = try decoder.decodeUInt32()
@@ -13,7 +13,7 @@ final class DecoderTestsTests: XCTestCase {
     }
     func testDecodeUInt64() throws {
         var data = Data()
-        data.append(contentsOf: [0xEF, 0xCD, 0xAB, 0x89, 0x67, 0x45, 0x23, 0x01])
+        data.append(contentsOf: [0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF])
         
         let decoder = BlazeBinaryDecoder(data: data)
         let value = try decoder.decodeUInt64()

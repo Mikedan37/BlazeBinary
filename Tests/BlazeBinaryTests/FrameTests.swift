@@ -5,38 +5,45 @@ final class FrameTests: XCTestCase {
     func testEncodeFrame() throws {
         let payload = Data([0x01, 0x02, 0x03, 0x04])
         let frame = try BlazeFrameEncoder.encodeFrame(payload)
-        
-        // v2.0 format: 2 bytes (frameType + compressionMode) + 4 bytes length + payload
-        XCTAssert(frame.count == 10) // 6 bytes header + 4 bytes payload
-        
-        // Check frameType (byte 0) - should be 0x00 for plaintext
-        let frameType = frame.withUnsafeBytes { bytes -> UInt8 in
+
+        // v2.1 format: 1 byte magic + 1 byte frameType + 1 byte compressionMode + 4 bytes length + payload
+        XCTAssertEqual(frame.count, 11, "7 bytes header + 4 bytes payload")
+
+        // Check magic byte (byte 0) - should be 0xBF
+        let magic = frame.withUnsafeBytes { bytes -> UInt8 in
             guard bytes.count >= 1 else { return 0xFF }
             return bytes[0]
         }
-        XCTAssert(frameType == 0x00, "Frame type should be 0x00 (plaintext)")
-        
-        // Check compressionMode (byte 1) - should be 0x00 for none
-        let compressionMode = frame.withUnsafeBytes { bytes -> UInt8 in
+        XCTAssertEqual(magic, 0xBF, "Magic byte should be 0xBF")
+
+        // Check frameType (byte 1) - should be 0x00 for plaintext
+        let frameType = frame.withUnsafeBytes { bytes -> UInt8 in
             guard bytes.count >= 2 else { return 0xFF }
             return bytes[1]
         }
-        XCTAssert(compressionMode == 0x00, "Compression mode should be 0x00 (none)")
-        
-        // Check length prefix (bytes 2-5, big-endian)
+        XCTAssertEqual(frameType, 0x00, "Frame type should be 0x00 (plaintext)")
+
+        // Check compressionMode (byte 2) - should be 0x00 for none
+        let compressionMode = frame.withUnsafeBytes { bytes -> UInt8 in
+            guard bytes.count >= 3 else { return 0xFF }
+            return bytes[2]
+        }
+        XCTAssertEqual(compressionMode, 0x00, "Compression mode should be 0x00 (none)")
+
+        // Check length prefix (bytes 3-6, big-endian)
         let length = frame.withUnsafeBytes { bytes -> UInt32 in
-            guard bytes.count >= 6 else { return 0 }
+            guard bytes.count >= 7 else { return 0 }
             var value: UInt32 = 0
-            value |= UInt32(bytes[2]) << 24
-            value |= UInt32(bytes[3]) << 16
-            value |= UInt32(bytes[4]) << 8
-            value |= UInt32(bytes[5])
+            value |= UInt32(bytes[3]) << 24
+            value |= UInt32(bytes[4]) << 16
+            value |= UInt32(bytes[5]) << 8
+            value |= UInt32(bytes[6])
             return value
         }
-        XCTAssert(length == 4, "Payload length should be 4")
-        
-        // Check payload (bytes 6-9)
-        let payloadStart = 6
+        XCTAssertEqual(length, 4, "Payload length should be 4")
+
+        // Check payload (bytes 7-10)
+        let payloadStart = 7
         XCTAssert(frame.count >= payloadStart + 4, "Frame should have enough bytes for payload")
         let extractedPayload = frame.withUnsafeBytes { bytes -> Data in
             guard bytes.count >= payloadStart + 4 else { return Data() }
@@ -129,16 +136,17 @@ final class FrameTests: XCTestCase {
     
     func testFrameParserZeroLength() throws {
         // Zero-length frame should be rejected
-        // v2.0 format: frameType (0x00) + compressionMode (0x00) + length (0x00000000) = 6 bytes
+        // v2.1 format: magic (0xBF) + frameType (0x00) + compressionMode (0x00) + length (0x00000000) = 7 bytes
         var invalidFrame = Data()
+        invalidFrame.append(0xBF) // magic
         invalidFrame.append(0x00) // frameType
         invalidFrame.append(0x00) // compressionMode
         let zeroLength: UInt32 = 0
         invalidFrame.append(contentsOf: withUnsafeBytes(of: zeroLength.bigEndian) { Data($0) })
-        
+
         let parser = BlazeFrameParser()
         try parser.append(invalidFrame)
-        
+
         XCTAssertThrowsError(try parser.nextFrame()) { error in
             XCTAssertTrue(error is BlazeBinaryError)
             if let bbError = error as? BlazeBinaryError {

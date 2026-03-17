@@ -61,21 +61,22 @@ final class SchemaVersionTests: XCTestCase {
         XCTAssertEqual(value, 42)
     }
     
-    func testSchemaVersionLarge() {
-        let encoder = BlazeBinaryEncoder(schemaVersion: 255)
-        XCTAssertEqual(encoder.version, 255)
-        
+    func testSchemaVersionMaxAllowed() {
+        // Schema versions are now restricted to 2...127 (single-byte varint)
+        // to avoid in-band collision with payload data starting with 0xFE.
+        let encoder = BlazeBinaryEncoder(schemaVersion: 127)
+        XCTAssertEqual(encoder.version, 127)
+
         encoder.encode("test")
         let data = encoder.encodedData()
-        
-        // v255 should include: 0xFE (marker) + varint(255) + encoded string
+
+        // v127 should include: 0xFE (marker) + 0x7F (127 as single byte) + encoded string
         XCTAssertEqual(data[0], 0xFE) // Marker
-        XCTAssertEqual(data[1], 0xFF) // varint(255) - first byte with continuation
-        XCTAssertEqual(data[2], 0x01) // varint(255) - second byte
-        
+        XCTAssertEqual(data[1], 0x7F) // 127 as single byte (no continuation bit)
+
         let decoder = BlazeBinaryDecoder(data: data)
-        XCTAssertEqual(decoder.version, 255)
-        
+        XCTAssertEqual(decoder.version, 127)
+
         // Should decode the string correctly
         let value = try! decoder.decodeString()
         XCTAssertEqual(value, "test")

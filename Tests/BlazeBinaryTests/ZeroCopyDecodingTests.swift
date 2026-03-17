@@ -34,56 +34,34 @@ final class ZeroCopyDecodingTests: XCTestCase {
     }
     
     func testZeroCopyDecoding() throws {
-        // Encode a fixed-width struct
         let point = Point(x: 1.5, y: 2.5)
         let encoder = BlazeBinaryEncoder()
         try encoder.encode(point)
         let data = encoder.encodedData()
         
-        // Decode using zero-copy (if alignment allows)
         let decoder = BlazeBinaryDecoder(data: data)
-        
-        // Note: Zero-copy requires exact struct layout match
-        // This test verifies the API exists and works when conditions are met
-        // In practice, alignment must be checked
-        do {
-            let decoded = try decoder.decodeZeroCopy(Point.self)
-            XCTAssertEqual(decoded.x, point.x, accuracy: 0.001)
-            XCTAssertEqual(decoded.y, point.y, accuracy: 0.001)
-        } catch {
-            // Zero-copy may fail due to alignment - that's expected
-            // Fall back to regular decoding
-            decoder.offset = 0
-            let decoded = try decoder.decode(Point.self)
-            XCTAssertEqual(decoded.x, point.x, accuracy: 0.001)
-            XCTAssertEqual(decoded.y, point.y, accuracy: 0.001)
-        }
+        let decoded = try decoder.decodeZeroCopy(Point.self)
+        XCTAssertEqual(decoded.x, point.x, accuracy: 0.001)
+        XCTAssertEqual(decoded.y, point.y, accuracy: 0.001)
     }
     
-    func testZeroCopyAlignmentCheck() throws {
-        // Create data with misaligned offset
-        var data = Data([0x00]) // Padding byte
+    func testZeroCopyRoundTripsCorrectly() throws {
+        let point = Point(x: -42.75, y: 0.0)
         let encoder = BlazeBinaryEncoder()
-        encoder.encode(Float(1.5).bitPattern)
-        encoder.encode(Float(2.5).bitPattern)
-        data.append(encoder.encodedData())
+        try encoder.encode(point)
+        let data = encoder.encodedData()
         
         let decoder = BlazeBinaryDecoder(data: data)
-        decoder.offset = 1 // Start at misaligned position
-        
-        // Should detect alignment issue
-        XCTAssertThrowsError(try decoder.decodeZeroCopy(Point.self)) { error in
-            XCTAssertTrue(error is BlazeBinaryError)
-        }
+        let decoded = try decoder.decodeZeroCopy(Point.self)
+        XCTAssertEqual(decoded.x, point.x, accuracy: 0.001)
+        XCTAssertEqual(decoded.y, point.y, accuracy: 0.001)
     }
     
     func testZeroCopyBoundsCheck() throws {
-        // Create insufficient data
-        let data = Data([0x01, 0x02, 0x03]) // Too small for Point (8 bytes)
+        let data = Data([0x01, 0x02, 0x03])
         
         let decoder = BlazeBinaryDecoder(data: data)
         
-        // Should detect bounds issue
         XCTAssertThrowsError(try decoder.decodeZeroCopy(Point.self)) { error in
             XCTAssertTrue(error is BlazeBinaryError)
         }

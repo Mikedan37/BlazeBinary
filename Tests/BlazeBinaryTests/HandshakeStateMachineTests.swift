@@ -36,11 +36,11 @@ final class HandshakeStateMachineTests: XCTestCase {
         let clientKeys = try client.deriveSessionKeys()
         let serverKeys = try server.deriveSessionKeys()
         
-        // Both must derive same keys
+        // Client's send key must equal server's receive key
         XCTAssertEqual(
-            clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            serverKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            "Both parties must derive identical keys"
+            clientKeys.sendKey.withUnsafeBytes { Data($0) },
+            serverKeys.receiveKey.withUnsafeBytes { Data($0) },
+            "Client's send key must equal server's receive key"
         )
     }
     
@@ -97,64 +97,64 @@ final class HandshakeStateMachineTests: XCTestCase {
         let clientKeys = try client.deriveSessionKeys()
         let serverKeys = try server.deriveSessionKeys()
         
-        // Keys will be the same because X25519 key agreement is commutative
-        let clientKeyData = clientKeys.encryptionKey.withUnsafeBytes { Data($0) }
-        let serverKeyData = serverKeys.encryptionKey.withUnsafeBytes { Data($0) }
-        XCTAssertEqual(clientKeyData, serverKeyData, "X25519 key agreement is commutative - keys should match regardless of order")
+        // X25519 key agreement is commutative — client's send key should match server's receive key
+        let clientSendKeyData = clientKeys.sendKey.withUnsafeBytes { Data($0) }
+        let serverRecvKeyData = serverKeys.receiveKey.withUnsafeBytes { Data($0) }
+        XCTAssertEqual(clientSendKeyData, serverRecvKeyData, "X25519 key agreement is commutative - complementary keys should match regardless of order")
     }
     
     func testDuplicateClientHello() throws {
         var client = BlazeSecureHandshake(role: .client)
         var server = BlazeSecureHandshake(role: .server)
-        
+
         let clientHello1 = client.makeClientHello()
         let clientHello2 = client.makeClientHello() // Duplicate
-        
+
         // Server receives first ClientHello
         try server.receiveRemotePublicKey(clientHello1)
-        
+
         // Server receives duplicate ClientHello (overwrites previous)
         try server.receiveRemotePublicKey(clientHello2)
-        
+
         // This should still work (last one wins)
         let serverHello = server.makeServerHello()
         try client.receiveRemotePublicKey(serverHello)
-        
+
         let clientKeys = try client.deriveSessionKeys()
         let serverKeys = try server.deriveSessionKeys()
-        
-        // Keys should match (same public keys)
+
+        // Keys should be complementary (same public keys)
         XCTAssertEqual(
-            clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            serverKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            "Duplicate ClientHello should still produce matching keys"
+            clientKeys.sendKey.withUnsafeBytes { Data($0) },
+            serverKeys.receiveKey.withUnsafeBytes { Data($0) },
+            "Duplicate ClientHello should still produce complementary keys"
         )
     }
     
     func testDuplicateServerHello() throws {
         var client = BlazeSecureHandshake(role: .client)
         var server = BlazeSecureHandshake(role: .server)
-        
+
         let clientHello = client.makeClientHello()
         try server.receiveRemotePublicKey(clientHello)
-        
+
         let serverHello1 = server.makeServerHello()
         let serverHello2 = server.makeServerHello() // Duplicate
-        
+
         // Client receives first ServerHello
         try client.receiveRemotePublicKey(serverHello1)
-        
+
         // Client receives duplicate ServerHello (overwrites previous)
         try client.receiveRemotePublicKey(serverHello2)
-        
+
         let clientKeys = try client.deriveSessionKeys()
         let serverKeys = try server.deriveSessionKeys()
-        
-        // Keys should match (same public keys)
+
+        // Keys should be complementary (same public keys)
         XCTAssertEqual(
-            clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            serverKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            "Duplicate ServerHello should still produce matching keys"
+            clientKeys.sendKey.withUnsafeBytes { Data($0) },
+            serverKeys.receiveKey.withUnsafeBytes { Data($0) },
+            "Duplicate ServerHello should still produce complementary keys"
         )
     }
     
@@ -331,8 +331,8 @@ final class HandshakeStateMachineTests: XCTestCase {
         
         // Should produce same keys (deterministic)
         XCTAssertEqual(
-            keys1.encryptionKey.withUnsafeBytes { Data($0) },
-            keys2.encryptionKey.withUnsafeBytes { Data($0) },
+            keys1.sendKey.withUnsafeBytes { Data($0) },
+            keys2.sendKey.withUnsafeBytes { Data($0) },
             "Multiple derivations should produce same keys"
         )
     }

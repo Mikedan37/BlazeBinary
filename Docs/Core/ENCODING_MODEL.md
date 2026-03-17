@@ -35,7 +35,7 @@ Small integers use varint encoding for compact representation:
 **One-liner example**:
 ```swift
 let encoder = BlazeBinaryEncoder()
-encoder.encode(42)  // Encodes to 1 byte: [0x2A]
+encoder.encode(42)  // Encodes to 1 byte: [0x54] (zigzag(42) = 84 = 0x54)
 ```
 
 ### 2. Signed Integer Optimization

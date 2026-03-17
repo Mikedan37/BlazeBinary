@@ -30,31 +30,44 @@ public func deserializeMessage<T: BlazeBinaryCodable>(_ bytes: [UInt8], as type:
 }
 
 /// Encrypts a payload using AEAD (ChaCha20-Poly1305)
+///
+/// Output format: [12-byte nonce][ciphertext][16-byte tag]
+///
+/// A fresh random nonce is generated for every call. The nonce is prepended
+/// to the output so `decryptPayload` can recover it.
+///
 /// - Parameters:
 ///   - payload: The data to encrypt
 ///   - key: The symmetric key for encryption
-/// - Returns: Encrypted data (ciphertext + tag)
+/// - Returns: Encrypted data (nonce + ciphertext + tag)
 public func encryptPayload(_ payload: Data, using key: SymmetricKey) throws -> Data {
-    // Use ChaCha20-Poly1305 like BlazeSecureSession
-    let nonce = try ChaChaPoly.Nonce(data: Data(repeating: 0, count: 12)) // Simple nonce for hook
+    let nonce = ChaChaPoly.Nonce()  // Random 12-byte nonce
     let sealedBox = try ChaChaPoly.seal(payload, using: key, nonce: nonce)
-    return sealedBox.ciphertext + sealedBox.tag
+    // Prepend nonce so decryptPayload can recover it
+    return Data(nonce) + sealedBox.ciphertext + sealedBox.tag
 }
 
 /// Decrypts a payload using AEAD (ChaCha20-Poly1305)
+///
+/// Expected input format: [12-byte nonce][ciphertext][16-byte tag]
+/// (as produced by `encryptPayload`)
+///
 /// - Parameters:
-///   - encrypted: The encrypted data (ciphertext + tag)
+///   - encrypted: The encrypted data (nonce + ciphertext + tag)
 ///   - key: The symmetric key for decryption
 /// - Returns: Decrypted payload
 public func decryptPayload(_ encrypted: Data, using key: SymmetricKey) throws -> Data {
-    guard encrypted.count >= 16 else {
-        throw BlazeBinaryError.decodeFailed("Encrypted data too short")
+    // Minimum size: 12 (nonce) + 0 (ciphertext) + 16 (tag) = 28 bytes
+    guard encrypted.count >= 28 else {
+        throw BlazeBinaryError.decodeFailed("Encrypted data too short: need at least 28 bytes (12 nonce + 16 tag), got \(encrypted.count)")
     }
-    
-    let ciphertext = encrypted.prefix(encrypted.count - 16)
-    let tag = encrypted.suffix(16)
-    let nonce = try ChaChaPoly.Nonce(data: Data(repeating: 0, count: 12)) // Simple nonce for hook
-    
+
+    let nonceData = encrypted.prefix(12)
+    let ciphertextAndTag = encrypted.dropFirst(12)
+    let ciphertext = ciphertextAndTag.prefix(ciphertextAndTag.count - 16)
+    let tag = ciphertextAndTag.suffix(16)
+
+    let nonce = try ChaChaPoly.Nonce(data: nonceData)
     let sealedBox = try ChaChaPoly.SealedBox(nonce: nonce, ciphertext: ciphertext, tag: tag)
     return try ChaChaPoly.open(sealedBox, using: key)
 }

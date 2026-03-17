@@ -48,11 +48,16 @@ final class DHProtocolIntegrationTests: XCTestCase {
         let aliceKeys = try alice.deriveSessionKeys()
         let bobKeys = try bob.deriveSessionKeys()
         
-        // Step 7: Validate both sides compute identical session keys
+        // Step 7: Validate both sides compute complementary session keys
         XCTAssertEqual(
-            aliceKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            bobKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            "Both parties must derive identical encryption keys"
+            aliceKeys.sendKey.withUnsafeBytes { Data($0) },
+            bobKeys.receiveKey.withUnsafeBytes { Data($0) },
+            "Alice's send key must equal Bob's receive key"
+        )
+        XCTAssertEqual(
+            aliceKeys.receiveKey.withUnsafeBytes { Data($0) },
+            bobKeys.sendKey.withUnsafeBytes { Data($0) },
+            "Alice's receive key must equal Bob's send key"
         )
         XCTAssertEqual(
             aliceKeys.authenticationKey.withUnsafeBytes { Data($0) },
@@ -310,11 +315,11 @@ final class DHProtocolIntegrationTests: XCTestCase {
         XCTAssertEqual(authenticationKeyData.count, 32, "Authentication key must be 32 bytes (256 bits)")
         XCTAssertEqual(aliceKeys.noncePrefix.count, 4, "Nonce prefix must be 4 bytes")
         
-        // Both parties must derive same keys
+        // Both parties must derive complementary keys
         XCTAssertEqual(
-            aliceKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            bobKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            "Both parties must derive identical encryption keys"
+            aliceKeys.sendKey.withUnsafeBytes { Data($0) },
+            bobKeys.receiveKey.withUnsafeBytes { Data($0) },
+            "Alice's send key must equal Bob's receive key"
         )
     }
     

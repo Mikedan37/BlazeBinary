@@ -69,15 +69,27 @@ public struct BlazeSecureHandshake {
     
     /// Receives and validates a remote public key from a handshake message.
     /// - Parameter data: Raw handshake message data
-    /// - Throws: `BlazeBinaryError.invalidHandshake` if message is malformed
+    /// - Throws: `BlazeBinaryError.invalidHandshake` if message is malformed or role mismatch
     public mutating func receiveRemotePublicKey(_ data: Data) throws {
-        let (_, remoteKeyData) = try parseHandshakeMessage(data)
-        
+        let (type, remoteKeyData) = try parseHandshakeMessage(data)
+
+        // Validate message type matches expected peer role
+        switch role {
+        case .client:
+            guard type == .serverHello else {
+                throw BlazeBinaryError.invalidHandshake("Client expected serverHello but got \(type)")
+            }
+        case .server:
+            guard type == .clientHello else {
+                throw BlazeBinaryError.invalidHandshake("Server expected clientHello but got \(type)")
+            }
+        }
+
         // Validate key length (X25519 public keys are 32 bytes)
         guard remoteKeyData.count == 32 else {
             throw BlazeBinaryError.invalidHandshake("Invalid public key length: expected 32, got \(remoteKeyData.count)")
         }
-        
+
         // Create public key object
         do {
             self.remotePublicKey = try Curve25519.KeyAgreement.PublicKey(rawRepresentation: remoteKeyData)
@@ -87,19 +99,19 @@ public struct BlazeSecureHandshake {
     }
     
     /// Derives session keys from the shared secret.
-    /// - Returns: Session key material (encryption key, authentication key, nonce prefix)
+    /// - Returns: Session key material with separate send/receive keys based on role
     /// - Throws: `BlazeBinaryError.handshakeFailed` if remote public key is not set or key agreement fails
     public func deriveSessionKeys() throws -> BlazeSessionKeyMaterial {
         guard let remoteKey = remotePublicKey else {
             throw BlazeBinaryError.handshakeFailed("Remote public key not received")
         }
-        
+
         do {
             // Perform key agreement
             let sharedSecret = try localPrivateKey.sharedSecretFromKeyAgreement(with: remoteKey)
-            
-            // Derive session keys via HKDF
-            return try BlazeBinary.deriveSessionKeys(from: sharedSecret, config: config)
+
+            // Derive session keys via HKDF with role-based direction separation
+            return try BlazeBinary.deriveSessionKeys(from: sharedSecret, config: config, role: role)
         } catch let error as BlazeBinaryError {
             throw error
         } catch {

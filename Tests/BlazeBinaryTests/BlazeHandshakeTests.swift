@@ -27,27 +27,28 @@ final class BlazeHandshakeTests: XCTestCase {
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
-        // Verify keys match
-        // Note: noncePrefix is randomly generated per handshake, so they won't match
-        // But encryption and authentication keys should match
-        XCTAssertEqual(clientKeys.encryptionKey.withUnsafeBytes { Data($0) }, serverKeys.encryptionKey.withUnsafeBytes { Data($0) })
+        // Verify keys are complementary (client's sendKey == server's receiveKey and vice versa)
+        XCTAssertEqual(clientKeys.sendKey.withUnsafeBytes { Data($0) }, serverKeys.receiveKey.withUnsafeBytes { Data($0) })
+        XCTAssertEqual(clientKeys.receiveKey.withUnsafeBytes { Data($0) }, serverKeys.sendKey.withUnsafeBytes { Data($0) })
         XCTAssertEqual(clientKeys.authenticationKey.withUnsafeBytes { Data($0) }, serverKeys.authenticationKey.withUnsafeBytes { Data($0) })
-        // Nonce prefixes are randomly generated, so they will be different
-        // This is expected behavior - each handshake gets a unique nonce prefix
+        // Nonce prefixes are deterministically derived per direction
+        XCTAssertEqual(clientKeys.sendNoncePrefix, serverKeys.receiveNoncePrefix)
+        XCTAssertEqual(clientKeys.receiveNoncePrefix, serverKeys.sendNoncePrefix)
     }
     
     func testKeyAgreementWithMakeOutboundMessage() throws {
         // Test convenience method
         var clientHandshake = BlazeSecureHandshake(role: .client)
         var serverHandshake = BlazeSecureHandshake(role: .server)
-        
+
         let clientHello = clientHandshake.makeOutboundMessage()
         let serverHello = serverHandshake.makeOutboundMessage()
-        
+
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
-        
-        XCTAssertEqual(clientKeys.encryptionKey, serverKeys.encryptionKey)
+
+        // Client's send key should match server's receive key
+        XCTAssertEqual(clientKeys.sendKey.withUnsafeBytes { Data($0) }, serverKeys.receiveKey.withUnsafeBytes { Data($0) })
     }
     
     func testDifferentHandshakesProduceDifferentKeys() throws {
@@ -174,12 +175,12 @@ final class BlazeHandshakeTests: XCTestCase {
     }
     
     func testInvalidPublicKeyLength() {
-        var handshake = BlazeSecureHandshake(role: .client)
+        var handshake = BlazeSecureHandshake(role: .server)
         // Create message with invalid key length (only 30 bytes instead of 32)
         var invalidMessage = Data(count: 34) // 1 (version) + 1 (type) + 2 (flags) + 30 (key) = 34
         invalidMessage[0] = 0x01
-        invalidMessage[1] = 0x01
-        
+        invalidMessage[1] = 0x01 // clientHello — correct for a server to receive
+
         // This should fail when trying to parse (message too short)
         XCTAssertThrowsError(try handshake.receiveRemotePublicKey(invalidMessage)) { error in
             if case BlazeBinaryError.invalidHandshake(let message) = error {
@@ -219,11 +220,12 @@ final class BlazeHandshakeTests: XCTestCase {
         let clientHello = clientHandshake.makeClientHello()
         let serverHello = serverHandshake.makeServerHello()
         
-        // Should still derive matching keys
+        // Should still derive complementary keys
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
-        
-        XCTAssertEqual(clientKeys.encryptionKey, serverKeys.encryptionKey)
+
+        // Client's send key should match server's receive key
+        XCTAssertEqual(clientKeys.sendKey.withUnsafeBytes { Data($0) }, serverKeys.receiveKey.withUnsafeBytes { Data($0) })
     }
     
     func testDifferentConfigsProduceDifferentKeys() throws {
@@ -244,8 +246,8 @@ final class BlazeHandshakeTests: XCTestCase {
         let keys1 = try client1.processInboundMessage(serverHello1)
         let keys2 = try client2.processInboundMessage(serverHello2)
         
-        // Keys should be different due to different HKDF info
-        XCTAssertNotEqual(keys1.encryptionKey, keys2.encryptionKey)
+        // Keys should be different due to different HKDF info (authentication key uses config.hkdfInfo)
+        XCTAssertNotEqual(keys1.authenticationKey.withUnsafeBytes { Data($0) }, keys2.authenticationKey.withUnsafeBytes { Data($0) })
     }
 }
 

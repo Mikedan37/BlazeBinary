@@ -103,3 +103,14 @@ iOSInjectionProject/
 .swiftpm/
 *.xcodeproj/
 *.xcworkspace/
+
+# Article drafts and working files (not part of the library)
+article.html
+article_draft.md
+article_final.md
+article_preview.html
+benchmark_chart.html
+revision_plan.md
+agents.md
+NANO_BANANA_PROMPTS.md
+charts/

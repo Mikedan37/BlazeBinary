@@ -28,10 +28,10 @@ final class BlazeCryptoHardeningTests: XCTestCase {
         let clientKeys = try clientHandshake.processInboundMessage(serverHello)
         let serverKeys = try serverHandshake.processInboundMessage(clientHello)
         
-        // Verify keys match
+        // Verify keys are complementary (client's send = server's receive)
         XCTAssertEqual(
-            clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            serverKeys.encryptionKey.withUnsafeBytes { Data($0) }
+            clientKeys.sendKey.withUnsafeBytes { Data($0) },
+            serverKeys.receiveKey.withUnsafeBytes { Data($0) }
         )
         
         // Create sessions

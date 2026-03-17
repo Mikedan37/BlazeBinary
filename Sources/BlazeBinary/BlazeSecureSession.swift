@@ -28,6 +28,10 @@ internal enum SecureFrameType: UInt8 {
 /// - Separate send/recv counters for bidirectional communication
 /// - AAD includes frame type and static context string
 ///
+/// - Important: **Not thread-safe.** The send and receive counters are mutated on
+///   every encrypt/decrypt call. If you need bidirectional communication from
+///   different threads, use one session per direction or serialize access.
+///
 /// See ENCRYPTION.md for detailed specification.
 public struct BlazeSecureSession {
     /// Derived session key material
@@ -35,12 +39,17 @@ public struct BlazeSecureSession {
     
     /// Send counter (incremented for each outbound encrypted frame)
     private var sendCounter: UInt64
-    
-    /// Receive counter (used for strict replay protection)
-    /// Frames with counter < recvCounter are rejected (replays)
-    /// Frames with counter == recvCounter are allowed (next expected frame)
-    /// Frames with counter > recvCounter are allowed (future frames, out of order)
-    private var recvCounter: UInt64
+
+    /// Sliding window base for replay protection.
+    /// Counters below this value are unconditionally rejected.
+    private var recvCounterBase: UInt64
+
+    /// Bitmap for counters in the range [recvCounterBase, recvCounterBase + windowSize - 1].
+    /// Bit i is set if counter (recvCounterBase + i) has been received.
+    private var recvBitmap: UInt64
+
+    /// Size of the sliding replay protection window.
+    private let windowSize: UInt64 = 64
     
     /// Enable strict replay protection (reject nonces with counter <= recvCounter)
     /// Default: true (production-ready)
@@ -50,12 +59,21 @@ public struct BlazeSecureSession {
     private let config: BlazeCryptoConfig
     
     /// Creates a new secure session from derived key material.
+    ///
+    /// Counters start at 0, which is standard practice (TLS 1.3, WireGuard, Noise
+    /// Protocol all do the same). Nonce uniqueness is guaranteed by the combination
+    /// of the random 4-byte `noncePrefix` (unique per session) and the monotonic
+    /// counter (unique per frame within a session). Even if two sessions encrypt
+    /// the same plaintext, they'll produce different nonces because their prefixes
+    /// differ.
+    ///
     /// - Parameter keyMaterial: Session key material from handshake
     public init(keyMaterial: BlazeSessionKeyMaterial) {
         self.keyMaterial = keyMaterial
         self.sendCounter = 0
-        self.recvCounter = 0
-        self.config = BlazeCryptoConfig() // Use default config
+        self.recvCounterBase = 0
+        self.recvBitmap = 0
+        self.config = BlazeCryptoConfig()
     }
     
     /// Creates an encrypted frame payload from plaintext data.
@@ -70,43 +88,49 @@ public struct BlazeSecureSession {
     /// - Returns: Encrypted frame payload (with frameType byte)
     /// - Throws: `BlazeBinaryError.encryptionFailed` if encryption fails
     public mutating func makeEncryptedFrame(from plaintext: Data) throws -> Data {
+        // Bug 3 fix: Check exhaustion BEFORE using the counter
+        guard sendCounter < UInt64.max else {
+            throw BlazeBinaryError.encryptionFailed("Send counter exhausted — session must be rekeyed to prevent nonce reuse")
+        }
+
         // Construct nonce: 4-byte prefix + 8-byte big-endian counter
         var nonce = Data()
-        nonce.append(keyMaterial.noncePrefix)
-        
+        nonce.append(keyMaterial.sendNoncePrefix)
+
         // Append counter as big-endian UInt64
         let counterBytes = withUnsafeBytes(of: sendCounter.bigEndian) { Data($0) }
         nonce.append(counterBytes)
-        
+
         guard nonce.count == 12 else {
             throw BlazeBinaryError.encryptionFailed("Invalid nonce length: \(nonce.count) (expected 12)")
         }
-        
+
         // Construct AAD (Additional Authenticated Data)
-        // Includes: frameType (0x01) + static context string
+        // Includes: frameType (0x01) + nonce prefix (bind prefix into authenticated data) + static context string
         var aad = Data()
         aad.append(SecureFrameType.encrypted.rawValue)
+        aad.append(keyMaterial.sendNoncePrefix)
         aad.append(Data("BlazeBinaryFrame".utf8))
-        
+
         // Encrypt with ChaCha20-Poly1305
         let sealedBox: ChaChaPoly.SealedBox
         do {
             let nonceObj = try ChaChaPoly.Nonce(data: nonce)
-            sealedBox = try ChaChaPoly.seal(plaintext, using: keyMaterial.encryptionKey, nonce: nonceObj, authenticating: aad)
+            sealedBox = try ChaChaPoly.seal(plaintext, using: keyMaterial.sendKey, nonce: nonceObj, authenticating: aad)
         } catch {
-            throw BlazeBinaryError.encryptionFailed("ChaChaPoly encryption failed: \(error)")
+            throw BlazeBinaryError.encryptionFailed("AEAD encryption failed")
         }
-        
-        // Increment send counter
+
+        // Increment send counter after successful encryption
         sendCounter += 1
-        
+
         // Construct encrypted frame payload
         var payload = Data()
         payload.append(SecureFrameType.encrypted.rawValue) // frameType = 0x01
         payload.append(nonce) // 12 bytes
         payload.append(sealedBox.ciphertext) // ciphertext
         payload.append(sealedBox.tag) // 16-byte tag
-        
+
         return payload
     }
     
@@ -185,27 +209,28 @@ public struct BlazeSecureSession {
             throw BlazeBinaryError.encryptionFailed("Ciphertext extraction failed: expected \(ciphertextEnd - ciphertextStart) bytes, got \(ciphertext.count)")
         }
         
-        // Construct AAD (same as encryption)
+        // Construct AAD (same as encryption — includes receive nonce prefix for prefix binding)
         var aad = Data()
         aad.append(SecureFrameType.encrypted.rawValue)
+        aad.append(keyMaterial.receiveNoncePrefix)
         aad.append(Data("BlazeBinaryFrame".utf8))
-        
+
         // Reconstruct sealed box
         let sealedBox = try ChaChaPoly.SealedBox(
             nonce: try ChaChaPoly.Nonce(data: nonceData),
             ciphertext: ciphertext,
             tag: tag
         )
-        
+
         // Decrypt and authenticate
         let plaintext: Data
         do {
-            plaintext = try ChaChaPoly.open(sealedBox, using: keyMaterial.encryptionKey, authenticating: aad)
+            plaintext = try ChaChaPoly.open(sealedBox, using: keyMaterial.receiveKey, authenticating: aad)
         } catch {
             // Map ChaChaPoly errors to BlazeBinaryError
             // Authentication failures are critical - drop connection
             // Maps to BlazeBinary.CryptoError.authenticationFailed via error conversion
-            throw BlazeBinaryError.encryptionFailed("Authentication failed: \(error)")
+            throw BlazeBinaryError.encryptionFailed("AEAD authentication failed")
         }
         
         // Extract and validate counter (strict replay protection)
@@ -224,20 +249,41 @@ public struct BlazeSecureSession {
             return value
         }
         
-        // Strict replay protection: reject nonces with counter < recvCounter
-        // Allow counter >= recvCounter (next expected frame or future frame)
-        // This ensures strictly monotonic counters while allowing sequential frames
+        // Sliding window replay protection:
+        // - Counters below recvCounterBase are unconditionally rejected (too old).
+        // - Counters within [recvCounterBase, recvCounterBase + windowSize - 1] are
+        //   checked against recvBitmap — duplicates are rejected.
+        // - Counters beyond the window advance the window and are accepted.
         if strictReplayProtection {
-            if counter < recvCounter {
-                // Counter is less than expected - definitely a replay
-                throw BlazeBinaryError.encryptionFailed("Replay detected: counter \(counter) < recvCounter \(recvCounter)")
+            if counter < recvCounterBase {
+                throw BlazeBinaryError.encryptionFailed("Replay detected: frame counter is behind the replay window")
+            }
+
+            let offset = counter - recvCounterBase
+
+            if offset < windowSize {
+                // Within the window — check bitmap for duplicate
+                let bit: UInt64 = 1 << offset
+                if recvBitmap & bit != 0 {
+                    throw BlazeBinaryError.encryptionFailed("Replay detected: duplicate frame counter within window")
+                }
+                recvBitmap |= bit
+            } else {
+                // Beyond the window — advance the window
+                let shift = offset - windowSize + 1
+                if shift >= windowSize {
+                    // Jumped past the entire window — reset bitmap
+                    recvBitmap = 0
+                    recvCounterBase = counter
+                } else {
+                    recvBitmap >>= shift
+                    recvCounterBase += shift
+                }
+                // Mark the new counter in the bitmap
+                let newOffset = counter - recvCounterBase
+                recvBitmap |= (1 << newOffset)
             }
         }
-        
-        // Update receive counter (strictly monotonic)
-        // Set to counter + 1 to ensure next frame must have counter >= recvCounter
-        // This prevents accepting frames with counter < recvCounter (replays)
-        recvCounter = counter + 1
         
         return plaintext
     }

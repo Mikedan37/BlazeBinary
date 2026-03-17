@@ -365,14 +365,33 @@ for size in aeadSizes {
 print("\n=== AEAD Decryption Benchmarks ===")
 for size in aeadSizes {
     let plaintext = Data(repeating: 0x55, count: size)
-    let encrypted = try! clientSession.makeEncryptedFrame(from: plaintext)
-    
+    // Replay-safe decrypt benchmark: pre-generate a monotonic sequence of frames
+    // and consume each exactly once. Reusing one encrypted frame in strict replay
+    // mode is an invalid benchmark methodology and triggers expected crypto failure.
+    var decryptClientHandshake = BlazeSecureHandshake(role: .client)
+    var decryptServerHandshake = BlazeSecureHandshake(role: .server)
+    let dClientHello = decryptClientHandshake.makeClientHello()
+    let dServerHello = decryptServerHandshake.makeServerHello()
+    let dClientKeys = try! decryptClientHandshake.processInboundMessage(dServerHello)
+    let dServerKeys = try! decryptServerHandshake.processInboundMessage(dClientHello)
+    var decryptClientSession = BlazeSecureSession(keyMaterial: dClientKeys)
+    var decryptServerSession = BlazeSecureSession(keyMaterial: dServerKeys)
+    let decryptIterations = size < 1024 ? 5000 : 500
+    var decryptFrames: [Data] = []
+    decryptFrames.reserveCapacity(decryptIterations)
+    for _ in 0..<decryptIterations {
+        decryptFrames.append(try! decryptClientSession.makeEncryptedFrame(from: plaintext))
+    }
+    var decryptIndex = 0
+
     _ = try runner.runBenchmark(
         name: "AEAD decrypt (\(size) bytes)",
-        iterations: size < 1024 ? 5000 : 500,
+        iterations: decryptIterations,
+        warmupIterations: 0,
         payloadSize: size
     ) {
-        _ = try serverSession.decryptFramePayload(encrypted)
+        _ = try decryptServerSession.decryptFramePayload(decryptFrames[decryptIndex])
+        decryptIndex += 1
     }
 }
 

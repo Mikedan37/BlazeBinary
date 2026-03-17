@@ -70,7 +70,40 @@ public enum BlazeCompression {
         guard compressedSize > 0 else {
             throw BlazeBinaryError.decodeFailed("Compression failed")
         }
-        
+
+        // If compressedSize == bufferSize, output may have been truncated.
+        // Retry with progressively larger buffers until compressedSize < currentBufferSize.
+        if compressedSize == bufferSize {
+            var currentBufferSize = bufferSize
+            var currentCompressedData = compressedData
+            var currentCompressedSize = compressedSize
+            for multiplier in [2, 4, 8] {
+                currentBufferSize = bufferSize * multiplier
+                currentCompressedData = Data(count: currentBufferSize)
+                currentCompressedSize = data.withUnsafeBytes { sourceBuffer in
+                    currentCompressedData.withUnsafeMutableBytes { destBuffer in
+                        compression_encode_buffer(
+                            destBuffer.bindMemory(to: UInt8.self).baseAddress!,
+                            currentBufferSize,
+                            sourceBuffer.bindMemory(to: UInt8.self).baseAddress!,
+                            data.count,
+                            nil,
+                            algorithm
+                        )
+                    }
+                }
+                guard currentCompressedSize > 0 else {
+                    throw BlazeBinaryError.decodeFailed("Compression failed")
+                }
+                if currentCompressedSize < currentBufferSize { break }
+            }
+            guard currentCompressedSize < currentBufferSize else {
+                throw BlazeBinaryError.decodeFailed("Compression failed: output buffer exhausted")
+            }
+            currentCompressedData.count = currentCompressedSize
+            return currentCompressedData
+        }
+
         compressedData.count = compressedSize
         return compressedData
         #else
@@ -106,14 +139,20 @@ public enum BlazeCompression {
             algorithm = COMPRESSION_LZFSE
         }
         
+        let maxAbsoluteSize = 16 * 1024 * 1024 // 16MB absolute ceiling
+        let maxRatio = 100                      // 100x expansion ratio ceiling
+        
         // Estimate decompressed size if not provided
-        // For LZFSE, we need a more conservative estimate as it can compress very well
-        // Try progressively larger buffers if needed
-        var estimatedSize = originalSize ?? max(data.count * 10, 1024) // More conservative estimate
+        var estimatedSize = originalSize ?? max(data.count * 10, 1024)
+        
+        // Enforce both absolute and ratio limits on estimated size
+        let ratioLimit = data.count <= Int.max / maxRatio ? data.count * maxRatio : maxAbsoluteSize
+        let effectiveLimit = min(maxAbsoluteSize, ratioLimit)
+        estimatedSize = min(estimatedSize, effectiveLimit)
+        
         var decompressedData = Data(count: estimatedSize)
         var result: Int = 0
         
-        // Try decompression with estimated size
         result = data.withUnsafeBytes { sourceBuffer in
             decompressedData.withUnsafeMutableBytes { destBuffer in
                 compression_decode_buffer(
@@ -127,11 +166,14 @@ public enum BlazeCompression {
             }
         }
         
-        // If buffer was too small, try with progressively larger sizes
-        if result == 0 && estimatedSize < 100 * 1024 * 1024 { // Max 100MB
-            // Try 20x, then 50x, then 100x
+        // If buffer was too small or result == estimatedSize (ambiguous truncation), retry with larger sizes
+        if result == 0 || result == estimatedSize {
             for multiplier in [20, 50, 100] {
-                estimatedSize = data.count * multiplier
+                let (candidateSize, overflow) = data.count.multipliedReportingOverflow(by: multiplier)
+                if overflow { break }
+                estimatedSize = min(candidateSize, effectiveLimit)
+                if estimatedSize == decompressedData.count { continue }
+
                 decompressedData = Data(count: estimatedSize)
                 result = data.withUnsafeBytes { sourceBuffer in
                     decompressedData.withUnsafeMutableBytes { destBuffer in
@@ -145,14 +187,17 @@ public enum BlazeCompression {
                         )
                     }
                 }
-                if result > 0 {
-                    break
-                }
+                if result > 0 && result < estimatedSize { break }
+                if estimatedSize >= effectiveLimit { break }
             }
         }
         
         guard result > 0 else {
             throw BlazeBinaryError.decodeFailed("Decompression failed: buffer too small or invalid data")
+        }
+        
+        guard result <= maxAbsoluteSize else {
+            throw BlazeBinaryError.decodeFailed("Decompressed size (\(result) bytes) exceeds absolute limit (\(maxAbsoluteSize) bytes)")
         }
         
         decompressedData.count = result

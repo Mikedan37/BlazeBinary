@@ -82,14 +82,10 @@ This document tracks potential improvements and feature requests for BlazeBinary
 - Performance benchmarks
 - Backward compatibility
 
-### 9. Add Compression Support
-**Status**: Open  
-**Priority**: Low  
-**Description**: Add optional compression (e.g., zlib, lz4) for large payloads.  
-**Requirements**:
-- Optional feature
-- Performance benchmarks
-- Size vs speed trade-offs
+### 9. ~~Add Compression Support~~
+**Status**: Done
+**Priority**: N/A
+**Description**: LZ4 and LZFSE compression are implemented in `Compression.swift` and `StreamingCompression.swift`. Frame-level compression is supported via `CompressionMode` in `BlazeFrameEncoder.encodeFrame()`.
 
 ### 10. Add Schema Validation
 **Status**: Open  

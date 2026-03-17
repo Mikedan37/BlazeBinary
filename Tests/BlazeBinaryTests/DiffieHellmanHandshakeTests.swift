@@ -28,10 +28,14 @@ final class DiffieHellmanHandshakeTests: XCTestCase {
         let clientKeys = try clientHandshake.deriveSessionKeys()
         let serverKeys = try serverHandshake.deriveSessionKeys()
         
-        // Both should have the same encryption and authentication keys
+        // Client's send key should match server's receive key (and vice versa)
         XCTAssertEqual(
-            clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-            serverKeys.encryptionKey.withUnsafeBytes { Data($0) }
+            clientKeys.sendKey.withUnsafeBytes { Data($0) },
+            serverKeys.receiveKey.withUnsafeBytes { Data($0) }
+        )
+        XCTAssertEqual(
+            clientKeys.receiveKey.withUnsafeBytes { Data($0) },
+            serverKeys.sendKey.withUnsafeBytes { Data($0) }
         )
         XCTAssertEqual(
             clientKeys.authenticationKey.withUnsafeBytes { Data($0) },

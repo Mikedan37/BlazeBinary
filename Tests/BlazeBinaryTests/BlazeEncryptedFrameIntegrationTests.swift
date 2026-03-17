@@ -51,11 +51,8 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         // 7. Process serverHello and derive keys
         let clientKeys = try clientHandshake.processInboundMessage(receivedServerHello!)
         
-        // 8. Verify keys match
-        // Note: noncePrefix is randomly generated per handshake, so they won't match
-        // But encryption and authentication keys should match
-        XCTAssertEqual(clientKeys.encryptionKey.withUnsafeBytes { Data($0) }, serverKeys.encryptionKey.withUnsafeBytes { Data($0) })
-        // Nonce prefixes are randomly generated, so they will be different (expected)
+        // 8. Verify keys are complementary (client's send key == server's receive key)
+        XCTAssertEqual(clientKeys.sendKey.withUnsafeBytes { Data($0) }, serverKeys.receiveKey.withUnsafeBytes { Data($0) })
         
         // === ENCRYPTED COMMUNICATION ===
         
@@ -237,20 +234,24 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
         
         let frame = try BlazeFrameEncoder.encodeHandshakeFrame(handshakeMessage)
         
-        // v2.0 frame format:
-        // Byte 0: frameType
-        // Byte 1: compressionMode
-        // Bytes 2-5: payloadLength (big-endian UInt32)
-        // Bytes 6+: payload
-        
-        // Check frameType (byte 0)
-        XCTAssertEqual(frame[0], 0x02) // SecureFrameType.handshake
-        
-        // Check compressionMode (byte 1)
-        XCTAssertEqual(frame[1], 0x00) // CompressionMode.none
-        
-        // Check payloadLength (bytes 2-5)
-        let lengthBytes = frame.subdata(in: 2..<6)
+        // v2.1 frame format:
+        // Byte 0: 0xBF (magic)
+        // Byte 1: frameType
+        // Byte 2: compressionMode
+        // Bytes 3-6: payloadLength (big-endian UInt32)
+        // Bytes 7+: payload
+
+        // Check magic byte (byte 0)
+        XCTAssertEqual(frame[0], 0xBF) // v2 magic
+
+        // Check frameType (byte 1)
+        XCTAssertEqual(frame[1], 0x02) // SecureFrameType.handshake
+
+        // Check compressionMode (byte 2)
+        XCTAssertEqual(frame[2], 0x00) // CompressionMode.none
+
+        // Check payloadLength (bytes 3-6)
+        let lengthBytes = frame.subdata(in: 3..<7)
         let payloadLength = lengthBytes.withUnsafeBytes { bytes in
             var value: UInt32 = 0
             value |= UInt32(bytes[0]) << 24
@@ -259,11 +260,11 @@ final class BlazeEncryptedFrameIntegrationTests: XCTestCase {
             value |= UInt32(bytes[3])
             return value
         }
-        
+
         XCTAssertEqual(payloadLength, UInt32(handshakeMessage.count)) // 36 bytes
-        
-        // Check handshake message (bytes 6+)
-        let parsedMessage = frame.subdata(in: 6..<frame.count)
+
+        // Check handshake message (bytes 7+)
+        let parsedMessage = frame.subdata(in: 7..<frame.count)
         XCTAssertEqual(parsedMessage, handshakeMessage)
     }
     

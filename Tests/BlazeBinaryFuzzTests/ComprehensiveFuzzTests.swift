@@ -193,10 +193,10 @@ final class ComprehensiveFuzzTests: XCTestCase {
                 let clientKeys = try clientHandshake.processInboundMessage(serverHello)
                 let serverKeys = try serverHandshake.processInboundMessage(clientHello)
                 
-                // Keys should match
+                // Client's send key should match server's receive key
                 XCTAssertEqual(
-                    clientKeys.encryptionKey.withUnsafeBytes { Data($0) },
-                    serverKeys.encryptionKey.withUnsafeBytes { Data($0) }
+                    clientKeys.sendKey.withUnsafeBytes { Data($0) },
+                    serverKeys.receiveKey.withUnsafeBytes { Data($0) }
                 )
             } catch {
                 XCTFail("Valid handshake should not fail: \(error)")

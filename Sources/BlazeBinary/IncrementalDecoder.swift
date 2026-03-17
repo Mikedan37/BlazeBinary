@@ -55,24 +55,33 @@ public class BlazeIncrementalDecoder {
         var bytesRead = 0
         let maxBytes = 10
         
+        var varintComplete = false
         while bytesRead < maxBytes && offset < buffer.count {
             let byte = buffer[offset]
             offset += 1
             bytesRead += 1
-            
+
             length |= UInt64(byte & 0x7F) << shift
-            
+
             if (byte & 0x80) == 0 {
+                varintComplete = true
                 break
             }
-            
+
             shift += 7
             if shift >= 64 {
                 offset = savedOffset
                 throw BlazeBinaryError.invalidVarint
             }
         }
-        
+
+        // If the buffer was exhausted mid-varint (last byte had continuation bit set),
+        // the varint is incomplete — restore offset and signal need for more data.
+        if !varintComplete {
+            offset = savedOffset
+            return nil
+        }
+
         // Check if we have the complete field
         // Validate that length can fit in Int before conversion
         guard length <= UInt64(Int.max) else {
@@ -81,21 +90,30 @@ public class BlazeIncrementalDecoder {
         }
         
         let lengthInt = Int(length)
+        guard lengthInt >= 0 else {
+            offset = savedOffset
+            throw BlazeBinaryError.decodeFailed("Field length negative or overflowed")
+        }
         guard lengthInt <= maxAllowedLength else {
             offset = savedOffset
             throw BlazeBinaryError.decodeFailed("Field length \(lengthInt) exceeds maximum \(maxAllowedLength)")
         }
-        
-        guard offset + lengthInt <= buffer.count else {
+        let end = offset + lengthInt
+        guard end >= offset else {
+            offset = savedOffset
+            throw BlazeBinaryError.decodeFailed("Field length overflow")
+        }
+        guard end <= buffer.count else {
             // Not enough data yet, restore offset
             offset = savedOffset
             return nil
         }
         
-        // Extract field data
-        let fieldData = buffer.subdata(in: offset..<(offset + lengthInt))
-        offset += lengthInt
-        
+        // Extract field data (end already validated)
+        let fieldData = buffer.subdata(in: offset..<end)
+        offset = end
+
+        compactIfNeeded()
         return fieldData
     }
     
@@ -142,24 +160,33 @@ public class BlazeIncrementalDecoder {
         var bytesRead = 0
         let maxBytes = 10
         
+        var varintComplete = false
         while bytesRead < maxBytes && offset < buffer.count {
             let byte = buffer[offset]
             offset += 1
             bytesRead += 1
-            
+
             count |= UInt64(byte & 0x7F) << shift
-            
+
             if (byte & 0x80) == 0 {
+                varintComplete = true
                 break
             }
-            
+
             shift += 7
             if shift >= 64 {
                 offset = savedOffset
                 throw BlazeBinaryError.invalidVarint
             }
         }
-        
+
+        // If the buffer was exhausted mid-varint (last byte had continuation bit set),
+        // the varint is incomplete — restore offset and signal need for more data.
+        if !varintComplete {
+            offset = savedOffset
+            return 0
+        }
+
         // Validate that count can fit in Int before conversion
         guard count <= UInt64(Int.max) else {
             offset = savedOffset
@@ -171,20 +198,50 @@ public class BlazeIncrementalDecoder {
             throw BlazeBinaryError.decodeFailed("Array count \(count) exceeds maximum \(maxAllowedLength)")
         }
         
-        // Process elements incrementally
+        // Process elements incrementally — decode each element and call the callback
+        // with the raw bytes consumed by that element.
         var processed = 0
         let countInt = Int(count)
         for _ in 0..<countInt {
-            // For each element, we need to decode it completely
-            // This is a simplified version - in practice, you'd need to know the element structure
-            // For now, we'll just track that we're processing
-            // A full implementation would decode each element and call the callback
+            guard offset < buffer.count else {
+                throw BlazeBinaryError.truncated
+            }
+
+            // Decode one element from the current position in the buffer.
+            // BlazeBinaryDecoder works on a Data slice; its internal offset
+            // tells us how many bytes the element consumed.
+            let remaining = buffer.subdata(in: offset..<buffer.count)
+            // Use rawMode to prevent the decoder from misinterpreting
+            // element bytes that happen to start with 0xFE as a schema version marker.
+            let elementDecoder = BlazeBinaryDecoder(data: remaining, rawMode: true)
+            let _ = try T(from: elementDecoder)
+
+            let bytesConsumed = elementDecoder.offset
+            guard bytesConsumed > 0 else {
+                throw BlazeBinaryError.decodeFailed("Element \(processed) consumed 0 bytes — possible infinite loop")
+            }
+
+            // Hand the raw bytes for this element to the callback
+            let elementBytes = buffer.subdata(in: offset..<(offset + bytesConsumed))
+            try callback(elementBytes)
+
+            offset += bytesConsumed
             processed += 1
         }
-        
+
+        compactIfNeeded()
         return processed
     }
     
+    /// Compacts the buffer by removing already-consumed bytes when more than
+    /// half of the buffer has been processed, reducing memory waste.
+    private func compactIfNeeded() {
+        if offset > 0 && offset > buffer.count / 2 {
+            buffer.removeFirst(offset)
+            offset = 0
+        }
+    }
+
     /// Returns the current buffer size.
     public var bufferSize: Int {
         return buffer.count

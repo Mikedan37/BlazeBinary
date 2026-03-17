@@ -25,11 +25,11 @@ Comparison of encoded size for a typical message object:
 
 | Format | Size (bytes) | vs JSON | Notes |
 |--------|--------------|--------|-------|
-| **JSON** | 120 | 100% | Baseline |
-| **BlazeBinary** | 40 | 33% | 67% smaller |
-| **CBOR** | 45 | 38% | 63% smaller |
-| **MessagePack** | 42 | 35% | 65% smaller |
-| **Protocol Buffers** | 38 | 32% | Requires schema |
+| **JSON** | ~53 | 100% | Baseline (compact, no pretty-printing) |
+| **BlazeBinary** | 13 | 25% | 75% smaller (verified from encoder source) |
+| **Protobuf** | ~17 | ~32% | Estimated from wire format spec |
+| **MessagePack** | ~35 | ~66% | Estimated (self-describing, includes field names) |
+| **CBOR** | ~35 | ~66% | Estimated (self-describing, includes field names) |
 
 ### Example Object
 
@@ -43,10 +43,11 @@ struct Message {
 ```
 
 **Size Breakdown**:
-- JSON: 120 bytes (includes field names, whitespace, quotes)
-- BlazeBinary: 40 bytes (varint length + UTF-8 + varint + bool + varint length + data)
-- CBOR: 45 bytes (similar structure, different encoding)
-- MessagePack: 42 bytes (compact binary format)
+- JSON: ~53 bytes (compact, no pretty-printing; includes field names, quotes, colons)
+- BlazeBinary: 13 bytes (varint length + UTF-8 + zigzag varint + bool + varint length + data)
+- Protobuf: ~17 bytes (estimated from wire format spec; includes field number tags)
+- MessagePack: ~35 bytes (estimated; self-describing format includes field names)
+- CBOR: ~35 bytes (estimated; self-describing format includes field names)
 
 ## Table 2: Encoding Operations Per Second
 

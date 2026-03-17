@@ -38,12 +38,11 @@ final class StreamingCompressionTests: XCTestCase {
         allCompressed.append(compressed3)
         allCompressed.append(final)
         
-        // Decompress (needs all compressed data)
+        // Decompress (collect output from both decompress and decompressFinal)
         let decompressor = try BlazeStreamingDecompressor(mode: .lz4)
-        _ = try decompressor.decompress(allCompressed)
-        let decompressed = try decompressor.decompressFinal()
-        
-        _ = chunk1 + chunk2 + chunk3
+        var decompressed = try decompressor.decompress(allCompressed)
+        decompressed.append(try decompressor.decompressFinal())
+
         // Note: Due to chunked compression, exact match may not be possible
         // Verify we got reasonable data back
         XCTAssertFalse(decompressed.isEmpty)
@@ -70,11 +69,11 @@ final class StreamingCompressionTests: XCTestCase {
         let final = try compressor.finalize()
         allCompressed.append(final)
         
-        // Decompress (provide all compressed data)
+        // Decompress (collect output from both decompress and decompressFinal)
         let decompressor = try BlazeStreamingDecompressor(mode: .lz4)
-        _ = try decompressor.decompress(allCompressed)
-        let decompressed = try decompressor.decompressFinal()
-        
+        var decompressed = try decompressor.decompress(allCompressed)
+        decompressed.append(try decompressor.decompressFinal())
+
         // Verify we got some data back
         XCTAssertFalse(decompressed.isEmpty)
     }
@@ -99,9 +98,9 @@ final class StreamingCompressionTests: XCTestCase {
         allCompressed.append(final)
         
         let decompressor = try BlazeStreamingDecompressor(mode: .lzfse)
-        _ = try decompressor.decompress(allCompressed)
-        let decompressed = try decompressor.decompressFinal()
-        
+        var decompressed = try decompressor.decompress(allCompressed)
+        decompressed.append(try decompressor.decompressFinal())
+
         // Verify we got data back (may not be exact due to chunking)
         XCTAssertFalse(decompressed.isEmpty)
     }

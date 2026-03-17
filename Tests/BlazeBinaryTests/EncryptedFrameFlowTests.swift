@@ -20,14 +20,16 @@ final class EncryptedFrameFlowTests: XCTestCase {
     // MARK: - Setup
     
     private func createTestSession() throws -> BlazeSecureSession {
-        var alice = BlazeSecureHandshake(role: .client)
-        var bob = BlazeSecureHandshake(role: .server)
-        
-        try bob.receiveRemotePublicKey(alice.makeClientHello())
-        try alice.receiveRemotePublicKey(bob.makeServerHello())
-        
-        let keys = try alice.deriveSessionKeys()
-        var session = BlazeSecureSession(keyMaterial: keys)
+        // Use a single symmetric key for tests that encrypt and decrypt with the same session
+        let encryptionKey = SymmetricKey(size: .bits256)
+        let authKey = SymmetricKey(size: .bits256)
+        let noncePrefix = Data([0x01, 0x02, 0x03, 0x04])
+        let keyMaterial = BlazeSessionKeyMaterial(
+            encryptionKey: encryptionKey,
+            authenticationKey: authKey,
+            noncePrefix: noncePrefix
+        )
+        var session = BlazeSecureSession(keyMaterial: keyMaterial)
         session.strictReplayProtection = false // Allow counter 0 for tests
         return session
     }

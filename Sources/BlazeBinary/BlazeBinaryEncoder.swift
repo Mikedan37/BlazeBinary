@@ -9,6 +9,10 @@
 import Foundation
 
 /// Encoder for converting Swift values to deterministic binary format.
+///
+/// - Important: **Not thread-safe.** Each `BlazeBinaryEncoder` instance must be
+///   used from a single thread (or serial queue) at a time. Create a separate
+///   encoder per task if you need concurrent encoding.
 public class BlazeBinaryEncoder {
     @usableFromInline internal var data: Data
     @usableFromInline internal let schemaVersion: UInt32
@@ -27,24 +31,25 @@ public class BlazeBinaryEncoder {
     
     /// Returns the encoded data.
     /// If schemaVersion > 1, the schema version is prepended to the data.
+    ///
+    /// Schema version is encoded as: `0xFE` (marker) + single-byte varint (2...127).
+    /// Versions outside 2...127 are not supported (the decoder only accepts single-byte
+    /// varints to avoid in-band collision with payload data starting with 0xFE).
     public func encodedData() -> Data {
         // If schema version is 1 (default), don't encode it (backwards compatible)
         if schemaVersion == 1 {
             return data
         }
-        
-        // For schema version > 1, prepend: 0xFE (marker) + varint(schemaVersion)
+
+        // Schema version must fit in a single-byte varint (2...127) to avoid
+        // ambiguity with the decoder's 0xFE detection heuristic.
+        precondition(schemaVersion >= 2 && schemaVersion <= 127,
+                     "Schema version must be in range 2...127 (got \(schemaVersion))")
+
+        // Prepend: 0xFE (marker) + single byte (schemaVersion)
         var result = Data()
         result.append(0xFE) // Schema version marker byte
-        var v = UInt64(schemaVersion)
-        repeat {
-            var byte = UInt8(v & 0x7F)
-            v >>= 7
-            if v != 0 {
-                byte |= 0x80
-            }
-            result.append(byte)
-        } while v != 0
+        result.append(UInt8(schemaVersion))
         result.append(data)
         return result
     }
@@ -92,39 +97,107 @@ public class BlazeBinaryEncoder {
         } while v != 0
     }
     
-    // MARK: - Fixed-Width Little-Endian Encoding
+    // MARK: - Fixed-Width Big-Endian (Network Byte Order) Encoding
     
-    /// Encodes a UInt32 in little-endian format.
-    /// - Parameter value: The UInt32 to encode
+    /// Encodes a UInt16 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 2 bytes, big-endian
+    /// - Format: `[MSB, LSB]`
+    /// - Example: `0x1234` → `[0x12, 0x34]`
+    ///
+    /// **Framing**: This is a fixed-width 2-byte field. No length prefix.
+    /// **Allocation**: Single allocation-safe operation using `withUnsafeBytes`.
+    ///
+    /// - Parameter value: The UInt16 to encode
     @inlinable
-    public func encode(_ value: UInt32) {
-        withUnsafeBytes(of: value.littleEndian) { bytes in
+    public func encode(_ value: UInt16) {
+        withUnsafeBytes(of: value.bigEndian) { bytes in
             data.append(contentsOf: bytes)
         }
     }
     
-    /// Encodes a UInt64 in little-endian format.
+    /// Encodes a UInt32 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 4 bytes, big-endian
+    /// - Format: `[MSB, byte2, byte3, LSB]`
+    /// - Example: `0x12345678` → `[0x12, 0x34, 0x56, 0x78]`
+    ///
+    /// **Framing**: This is a fixed-width 4-byte field. No length prefix.
+    /// **Allocation**: Single allocation-safe operation using `withUnsafeBytes`.
+    ///
+    /// - Parameter value: The UInt32 to encode
+    @inlinable
+    public func encode(_ value: UInt32) {
+        withUnsafeBytes(of: value.bigEndian) { bytes in
+            data.append(contentsOf: bytes)
+        }
+    }
+    
+    /// Encodes a UInt64 in big-endian (network byte order) format.
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 8 bytes, big-endian
+    /// - Format: `[MSB, ..., LSB]`
+    /// - Example: `0x0123456789ABCDEF` → `[0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF]`
+    ///
+    /// **Framing**: This is a fixed-width 8-byte field. No length prefix.
+    /// **Allocation**: Single allocation-safe operation using `withUnsafeBytes`.
+    ///
     /// - Parameter value: The UInt64 to encode
     @inlinable
     public func encode(_ value: UInt64) {
-        withUnsafeBytes(of: value.littleEndian) { bytes in
+        withUnsafeBytes(of: value.bigEndian) { bytes in
             data.append(contentsOf: bytes)
         }
     }
     
     /// Encodes a Bool as a single byte (0x00 for false, 0x01 for true).
+    ///
+    /// **Framing**: Single-byte field, no endianness concerns.
+    /// **Cross-language**: Compatible with any language's boolean encoding.
+    ///
     /// - Parameter value: The Bool to encode
     @inlinable
     public func encode(_ value: Bool) {
         data.append(value ? 1 : 0)
     }
     
-    /// Encodes a Double in little-endian format (8 bytes).
+    /// Encodes a Float (Float32) in big-endian (network byte order) format (4 bytes).
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 4 bytes, big-endian IEEE 754 single precision
+    /// - Format: IEEE 754 single precision, bit pattern encoded as big-endian UInt32
+    /// - Example: `1.0` → IEEE 754 bit pattern `0x3F800000` → `[0x3F, 0x80, 0x00, 0x00]`
+    ///
+    /// **Framing**: This is a fixed-width 4-byte field. No length prefix.
+    /// **Allocation**: Single allocation-safe operation using `withUnsafeBytes`.
+    ///
+    /// - Parameter value: The Float to encode
+    @inlinable
+    public func encode(_ value: Float) {
+        let bitPattern = value.bitPattern
+        withUnsafeBytes(of: bitPattern.bigEndian) { bytes in
+            data.append(contentsOf: bytes)
+        }
+    }
+    
+    /// Encodes a Double in big-endian (network byte order) format (8 bytes).
+    ///
+    /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
+    /// - Wire format: 8 bytes, big-endian IEEE 754 double precision
+    /// - Format: IEEE 754 double precision, bit pattern encoded as big-endian UInt64
+    /// - Example: `1.0` → IEEE 754 bit pattern `0x3FF0000000000000` → `[0x3F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]`
+    ///
+    /// **Framing**: This is a fixed-width 8-byte field. No length prefix.
+    /// **Allocation**: Single allocation-safe operation using `withUnsafeBytes`.
+    ///
     /// - Parameter value: The Double to encode
     @inlinable
     public func encode(_ value: Double) {
         let bitPattern = value.bitPattern
-        withUnsafeBytes(of: bitPattern.littleEndian) { bytes in
+        withUnsafeBytes(of: bitPattern.bigEndian) { bytes in
             data.append(contentsOf: bytes)
         }
     }
@@ -156,11 +229,12 @@ public class BlazeBinaryEncoder {
     ///   that `data(using: .utf8)` returns non-nil for all valid strings. Empty strings are
     ///   encoded as a single byte (varint 0).
     public func encode(_ value: String) {
-        // String.data(using: .utf8) always returns non-nil for valid Swift Strings
-        // as Swift Strings are guaranteed to be valid UTF-8 or UTF-16 that can be converted
-        let utf8Data = value.data(using: .utf8) ?? Data()
-        encodeVarint(UInt64(utf8Data.count))
-        data.append(utf8Data)
+        // Use String.utf8 (a UTF8View) which is always valid — no optional, no fallback.
+        // This avoids the previous `data(using: .utf8) ?? Data()` pattern which could
+        // silently encode 0 bytes if the NSString bridge ever returned nil.
+        let utf8Bytes = Array(value.utf8)
+        encodeVarint(UInt64(utf8Bytes.count))
+        data.append(contentsOf: utf8Bytes)
     }
     
     // MARK: - Composite Types
