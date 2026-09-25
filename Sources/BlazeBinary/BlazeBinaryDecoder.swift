@@ -161,7 +161,18 @@ public class BlazeBinaryDecoder {
     }
     
     // MARK: - Fixed-Width Big-Endian (Network Byte Order) Decoding
-    
+
+    /// Decodes a UInt8 from exactly one raw byte.
+    /// - Returns: The decoded UInt8
+    /// - Throws: `BlazeBinaryError.truncated` if no bytes remain
+    @inlinable
+    public func decodeUInt8() throws -> UInt8 {
+        try ensureBytes(1)
+        let value = data[offset]
+        offset += 1
+        return value
+    }
+
     /// Decodes a UInt16 in big-endian (network byte order) format.
     ///
     /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.

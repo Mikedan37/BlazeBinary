@@ -98,7 +98,18 @@ public class BlazeBinaryEncoder {
     }
     
     // MARK: - Fixed-Width Big-Endian (Network Byte Order) Encoding
-    
+
+    /// Encodes a UInt8 as exactly one raw byte.
+    ///
+    /// - Wire format: 1 byte, no length prefix, no varint
+    /// - Example: `0xFF` → `[0xFF]`
+    ///
+    /// - Parameter value: The UInt8 to encode
+    @inlinable
+    public func encode(_ value: UInt8) {
+        data.append(value)
+    }
+
     /// Encodes a UInt16 in big-endian (network byte order) format.
     ///
     /// **Endianness**: Big-endian (network byte order) for cross-language compatibility.
