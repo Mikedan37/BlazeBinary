@@ -76,6 +76,17 @@ jobs:
           exit 1
         fi
 
+  c-codec:
+    name: BlazeBinary C golden vectors
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Same golden file the Swift tests use (Tests/BlazeBinaryTests/GoldenVectorTests.swift)
+    - name: Build and test (gcc, -Werror, ASan + UBSan)
+      run: make -C c test CC=gcc
+
   lint-docs:
     name: Lint Documentation
     runs-on: ubuntu-22.04
